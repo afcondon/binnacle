@@ -36,3 +36,13 @@ export const scheduleNoteImpl = (out, channel, note, velocity, delayMs, durMs) =
 export const sendCCImpl = (out, channel, controller, value) => {
   out.send([0xb0 | (channel & 0x0f), controller & 0x7f, value & 0x7f]);
 };
+
+// Note-on / note-off as separate timestamped events, for legato/tie/glide
+// where the note-off time isn't known until the next note arrives.
+export const noteOnAtImpl = (out, channel, note, velocity, delayMs) => {
+  out.send([0x90 | (channel & 0x0f), note & 0x7f, velocity & 0x7f], performance.now() + Math.max(0, delayMs));
+};
+
+export const noteOffAtImpl = (out, channel, note, delayMs) => {
+  out.send([0x80 | (channel & 0x0f), note & 0x7f, 0], performance.now() + Math.max(0, delayMs));
+};
