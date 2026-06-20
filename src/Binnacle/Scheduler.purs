@@ -47,6 +47,15 @@ startGrid clock cfg onTick = do
   id <- setInterval cfg.tickMs do
     r <- Clock.read clock
     nowMicros <- Clock.unixMicrosNow clock
+    -- Snap forward if we've fallen behind the clock. The clock JUMPS when it
+    -- transitions from free-run to Link-lock (beat ~0 → the rig's live beat,
+    -- which can be tens of thousands). Without this guard the recursive `drain`
+    -- would replay every step across that gap and overflow the stack. A live
+    -- sequencer must never play late notes anyway — skip the past, schedule
+    -- only the lookahead window.
+    let nowIdx = ceil (r.beat / cfg.stepBeats)
+    behind <- Ref.read nextRef
+    when (behind < nowIdx) (Ref.write nowIdx nextRef)
     let lookaheadBeats = cfg.lookaheadMs / 1000.0 * r.tempo / 60.0
         horizon = r.beat + lookaheadBeats
         drain = do
