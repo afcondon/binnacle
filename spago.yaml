@@ -1,0 +1,23 @@
+package:
+  name: binnacle
+  description: >
+    Binnacle — a reusable client SDK for browser apps that sync to the
+    Atlantis live-coding rig. Gives any Halogen/PureScript app three
+    instruments: a Link-locked clock (free-runs until the rig's anchor
+    arrives, then phase-locks), a lookahead scheduler, and direct
+    sample-accurate output to es9-daemon. Triggerfish (#240) is its
+    first consumer; the wire contract is the Atlantis Sync Protocol
+    (see README.md).
+  dependencies:
+    - prelude
+    - effect
+    - refs
+    - maybe
+    - integers
+    - numbers
+    - strings
+    - nullable
+    - js-timers
+workspace:
+  packageSet:
+    registry: 73.3.0
