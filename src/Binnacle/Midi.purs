@@ -11,6 +11,7 @@ module Binnacle.Midi
   , outputNames
   , findOutput
   , scheduleNote
+  , sendCC
   ) where
 
 import Prelude
@@ -19,7 +20,7 @@ import Data.Maybe (Maybe)
 import Data.Nullable (Nullable, toMaybe)
 import Effect (Effect)
 import Effect.Uncurried
-  (EffectFn1, EffectFn2, EffectFn6, mkEffectFn1, runEffectFn1, runEffectFn2, runEffectFn6)
+  (EffectFn1, EffectFn2, EffectFn4, EffectFn6, mkEffectFn1, runEffectFn1, runEffectFn2, runEffectFn4, runEffectFn6)
 
 foreign import data MidiAccess :: Type
 foreign import data MidiOut :: Type
@@ -28,6 +29,7 @@ foreign import requestAccessImpl :: EffectFn1 (EffectFn1 (Nullable MidiAccess) U
 foreign import outputNamesImpl :: EffectFn1 MidiAccess (Array String)
 foreign import findOutputImpl :: EffectFn2 MidiAccess String (Nullable MidiOut)
 foreign import scheduleNoteImpl :: EffectFn6 MidiOut Int Int Int Number Number Unit
+foreign import sendCCImpl :: EffectFn4 MidiOut Int Int Int Unit
 
 -- | Request Web MIDI access. Calls back with `Nothing` if Web MIDI is
 -- | unsupported or the user denies the permission prompt.
@@ -51,3 +53,8 @@ scheduleNote
   -> Effect Unit
 scheduleNote out o =
   runEffectFn6 scheduleNoteImpl out o.channel o.note o.velocity o.delayMs o.durMs
+
+-- | Send a control-change immediately. `channel` is 0-based. Used for glide
+-- | (portamento on/off CC 65 + time CC 5) on the head's channel.
+sendCC :: MidiOut -> { channel :: Int, controller :: Int, value :: Int } -> Effect Unit
+sendCC out o = runEffectFn4 sendCCImpl out o.channel o.controller o.value

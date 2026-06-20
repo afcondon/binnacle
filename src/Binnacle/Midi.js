@@ -31,3 +31,8 @@ export const scheduleNoteImpl = (out, channel, note, velocity, delayMs, durMs) =
   out.send([0x90 | ch, note & 0x7f, velocity & 0x7f], ts);
   out.send([0x80 | ch, note & 0x7f, 0], ts + Math.max(1, durMs));
 };
+
+// Immediate control-change (e.g. portamento on/off + time for glide).
+export const sendCCImpl = (out, channel, controller, value) => {
+  out.send([0xb0 | (channel & 0x0f), controller & 0x7f, value & 0x7f]);
+};
