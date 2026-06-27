@@ -14,6 +14,7 @@ module Binnacle.Clock
   , ClockReading
   , newClock
   , ingestAnchor
+  , setFreeBaseline
   , parseAnchorLine
   , read
   , unixMicrosNow
@@ -97,6 +98,15 @@ ingestAnchor :: Clock -> Anchor -> Effect Unit
 ingestAnchor (Clock ref) a = do
   p <- perfNow
   Ref.modify_ (\s -> s { anchor = Just a, anchorPerf = p, anchorCount = s.anchorCount + 1 }) ref
+
+-- | Override the free-run baseline. Several clocks given the same baseline
+-- | share one free-run timeline (and downbeat) with no rig — the laptop-only
+-- | analogue of all of them locking to one Link anchor. Touches only the
+-- | free-run branch; a live anchor still wins in `read`, so this is a no-op
+-- | while the rig is feeding us.
+setFreeBaseline :: Clock -> { startMicros :: Number, tempo :: Number } -> Effect Unit
+setFreeBaseline (Clock ref) b =
+  Ref.modify_ (_ { freeStartMicros = b.startMicros, freeTempo = b.tempo }) ref
 
 -- | Parse an Atlantis Sync Protocol anchor frame:
 -- | `anchor <unixMicros> <beat> <tempo> <quantum>`.
