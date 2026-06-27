@@ -19,9 +19,9 @@ import Prelude
 import Data.Int (ceil, toNumber)
 import Effect (Effect)
 import Effect.Ref as Ref
-import Effect.Timer (clearInterval, setInterval)
 import Binnacle.Clock (Clock)
 import Binnacle.Clock as Clock
+import Binnacle.Ticker (startWorkerTicker)
 
 type GridConfig =
   { stepBeats :: Number    -- musical length of one step (0.25 = a 16th)
@@ -44,7 +44,9 @@ startGrid clock cfg onTick = do
   -- Begin at the next whole step from "now" so we don't replay history.
   r0 <- Clock.read clock
   nextRef <- Ref.new (ceil (r0.beat / cfg.stepBeats))
-  id <- setInterval cfg.tickMs do
+  -- The poll runs on a Web-Worker timer (Binnacle.Ticker), so it keeps firing
+  -- while the tab is backgrounded — switch to Ableton and the music flows on.
+  startWorkerTicker cfg.tickMs do
     r <- Clock.read clock
     nowMicros <- Clock.unixMicrosNow clock
     -- Snap forward if we've fallen behind the clock. The clock JUMPS when it
@@ -72,4 +74,3 @@ startGrid clock cfg onTick = do
             Ref.write (idx + 1) nextRef
             drain
     drain
-  pure (clearInterval id)
