@@ -19,6 +19,7 @@ module Binnacle.Clock
   , read
   , unixMicrosNow
   , beatToUnixMicros
+  , perfMsAt
   ) where
 
 import Prelude
@@ -150,3 +151,14 @@ beatToUnixMicros (Clock ref) targetBeat = do
       a.unixMicros + (targetBeat - a.beat) * 60000000.0 / a.tempo
     _ ->
       st.freeStartMicros + targetBeat * 60000000.0 / st.freeTempo
+
+-- | Convert an absolute unix-micros instant into the browser's `performance.now`
+-- | millisecond timebase (the timestamp Web MIDI's `send` expects). Scheduling at
+-- | an ABSOLUTE time — rather than `performance.now() + delay` computed afresh at
+-- | send — stops pipeline latency between computing the fire time and actually
+-- | sending from being added on top (the ~130 ms co-sim offset). Uses the same
+-- | epoch mapping as `unixMicrosNow` (`unixMicros = perfMs*1000 + epochOffset`).
+perfMsAt :: Clock -> Number -> Effect Number
+perfMsAt (Clock ref) unixMicros = do
+  st <- Ref.read ref
+  pure ((unixMicros - st.epochOffsetMicros) / 1000.0)

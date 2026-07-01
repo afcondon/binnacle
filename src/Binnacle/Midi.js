@@ -46,3 +46,20 @@ export const noteOnAtImpl = (out, channel, note, velocity, delayMs) => {
 export const noteOffAtImpl = (out, channel, note, delayMs) => {
   out.send([0x80 | (channel & 0x0f), note & 0x7f, 0], performance.now() + Math.max(0, delayMs));
 };
+
+// Absolute-timestamp variants: `atMs` is already a performance.now() timestamp,
+// so we DON'T re-read the clock here — the note fires at `atMs` no matter how long
+// the pipeline took to reach send(). A past `atMs` fires immediately (so 0.0 = now).
+export const scheduleNoteAtMsImpl = (out, channel, note, velocity, atMs, durMs) => {
+  const ch = channel & 0x0f;
+  out.send([0x90 | ch, note & 0x7f, velocity & 0x7f], atMs);
+  out.send([0x80 | ch, note & 0x7f, 0], atMs + Math.max(1, durMs));
+};
+
+export const noteOnAtMsImpl = (out, channel, note, velocity, atMs) => {
+  out.send([0x90 | (channel & 0x0f), note & 0x7f, velocity & 0x7f], atMs);
+};
+
+export const noteOffAtMsImpl = (out, channel, note, atMs) => {
+  out.send([0x80 | (channel & 0x0f), note & 0x7f, 0], atMs);
+};

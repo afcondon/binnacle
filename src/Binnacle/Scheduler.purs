@@ -34,6 +34,9 @@ type Tick =
   , beat :: Number           -- the beat this step lands on
   , fireUnixMicros :: Number  -- absolute wall-clock fire time
   , delayMs :: Number        -- delay from now until fire (for fire-at)
+  , firePerfMs :: Number     -- ABSOLUTE performance.now fire time (for Web MIDI's
+                             -- timestamped send — schedule at this, not now+delay,
+                             -- so pipeline latency isn't added on top)
   }
 
 type Canceller = Effect Unit
@@ -65,11 +68,13 @@ startGrid clock cfg onTick = do
           let stepBeat = toNumber idx * cfg.stepBeats
           when (stepBeat <= horizon) do
             fireMicros <- Clock.beatToUnixMicros clock stepBeat
+            firePerf <- Clock.perfMsAt clock fireMicros
             onTick
               { index: idx
               , beat: stepBeat
               , fireUnixMicros: fireMicros
               , delayMs: max 0.0 ((fireMicros - nowMicros) / 1000.0)
+              , firePerfMs: firePerf
               }
             Ref.write (idx + 1) nextRef
             drain

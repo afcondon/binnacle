@@ -14,6 +14,9 @@ module Binnacle.Midi
   , sendCC
   , noteOnAt
   , noteOffAt
+  , scheduleNoteAtMs
+  , noteOnAtMs
+  , noteOffAtMs
   ) where
 
 import Prelude
@@ -34,6 +37,11 @@ foreign import scheduleNoteImpl :: EffectFn6 MidiOut Int Int Int Number Number U
 foreign import sendCCImpl :: EffectFn4 MidiOut Int Int Int Unit
 foreign import noteOnAtImpl :: EffectFn5 MidiOut Int Int Int Number Unit
 foreign import noteOffAtImpl :: EffectFn4 MidiOut Int Int Number Unit
+-- Absolute-timestamp variants: the last Number is an ABSOLUTE performance.now ms,
+-- passed straight to Web MIDI's send (no fresh performance.now() at send time).
+foreign import scheduleNoteAtMsImpl :: EffectFn6 MidiOut Int Int Int Number Number Unit
+foreign import noteOnAtMsImpl :: EffectFn5 MidiOut Int Int Int Number Unit
+foreign import noteOffAtMsImpl :: EffectFn4 MidiOut Int Int Number Unit
 
 -- | Request Web MIDI access. Calls back with `Nothing` if Web MIDI is
 -- | unsupported or the user denies the permission prompt.
@@ -71,3 +79,21 @@ noteOnAt out o = runEffectFn5 noteOnAtImpl out o.channel o.note o.velocity o.del
 -- | Note-off at now + `delayMs`.
 noteOffAt :: MidiOut -> { channel :: Int, note :: Int, delayMs :: Number } -> Effect Unit
 noteOffAt out o = runEffectFn4 noteOffAtImpl out o.channel o.note o.delayMs
+
+-- | Absolute-time variants — `atMs` is an ABSOLUTE `performance.now` millisecond
+-- | timestamp (e.g. from `Clock.perfMsAt`). Web MIDI fires at that instant
+-- | regardless of when `send` runs, so latency between deciding the time and
+-- | sending isn't added on top (fixes the ~130 ms frontend co-sim offset). A past
+-- | `atMs` fires immediately, so 0.0 still means "now".
+scheduleNoteAtMs
+  :: MidiOut
+  -> { channel :: Int, note :: Int, velocity :: Int, atMs :: Number, durMs :: Number }
+  -> Effect Unit
+scheduleNoteAtMs out o =
+  runEffectFn6 scheduleNoteAtMsImpl out o.channel o.note o.velocity o.atMs o.durMs
+
+noteOnAtMs :: MidiOut -> { channel :: Int, note :: Int, velocity :: Int, atMs :: Number } -> Effect Unit
+noteOnAtMs out o = runEffectFn5 noteOnAtMsImpl out o.channel o.note o.velocity o.atMs
+
+noteOffAtMs :: MidiOut -> { channel :: Int, note :: Int, atMs :: Number } -> Effect Unit
+noteOffAtMs out o = runEffectFn4 noteOffAtMsImpl out o.channel o.note o.atMs
