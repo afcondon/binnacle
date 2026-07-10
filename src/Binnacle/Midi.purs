@@ -7,9 +7,14 @@
 module Binnacle.Midi
   ( MidiAccess
   , MidiOut
+  , MidiIn
+  , MidiMsg
   , requestAccess
   , outputNames
   , findOutput
+  , inputNames
+  , findInput
+  , onMessage
   , scheduleNote
   , sendCC
   , noteOnAt
@@ -25,14 +30,25 @@ import Data.Maybe (Maybe)
 import Data.Nullable (Nullable, toMaybe)
 import Effect (Effect)
 import Effect.Uncurried
-  (EffectFn1, EffectFn2, EffectFn4, EffectFn5, EffectFn6, mkEffectFn1, runEffectFn1, runEffectFn2, runEffectFn4, runEffectFn5, runEffectFn6)
+  (EffectFn1, EffectFn2, EffectFn3, EffectFn4, EffectFn5, EffectFn6, mkEffectFn1, mkEffectFn3, runEffectFn1, runEffectFn2, runEffectFn4, runEffectFn5, runEffectFn6)
 
 foreign import data MidiAccess :: Type
 foreign import data MidiOut :: Type
+foreign import data MidiIn :: Type
+
+-- | One raw incoming MIDI message: the three bytes as ints. `status` is the full
+-- | status byte (high nibble = kind — 0xB0 CC, 0x90 note-on, 0x80 note-off; low
+-- | nibble = channel); `data1`/`data2` are controller/value or note/velocity.
+-- | Decoding is left to the caller so one input path serves encoders, switches
+-- | and pads without the FFI committing to a device layout.
+type MidiMsg = { status :: Int, data1 :: Int, data2 :: Int }
 
 foreign import requestAccessImpl :: EffectFn1 (EffectFn1 (Nullable MidiAccess) Unit) Unit
 foreign import outputNamesImpl :: EffectFn1 MidiAccess (Array String)
 foreign import findOutputImpl :: EffectFn2 MidiAccess String (Nullable MidiOut)
+foreign import inputNamesImpl :: EffectFn1 MidiAccess (Array String)
+foreign import findInputImpl :: EffectFn2 MidiAccess String (Nullable MidiIn)
+foreign import onMessageImpl :: EffectFn2 MidiIn (EffectFn3 Int Int Int Unit) (Effect Unit)
 foreign import scheduleNoteImpl :: EffectFn6 MidiOut Int Int Int Number Number Unit
 foreign import sendCCImpl :: EffectFn4 MidiOut Int Int Int Unit
 foreign import noteOnAtImpl :: EffectFn5 MidiOut Int Int Int Number Unit
@@ -56,6 +72,22 @@ outputNames = runEffectFn1 outputNamesImpl
 -- | First output port whose name contains `needle` (`""` = first port).
 findOutput :: MidiAccess -> String -> Effect (Maybe MidiOut)
 findOutput access needle = toMaybe <$> runEffectFn2 findOutputImpl access needle
+
+-- | Names of every available MIDI input port (for diagnostics / picking).
+inputNames :: MidiAccess -> Effect (Array String)
+inputNames = runEffectFn1 inputNamesImpl
+
+-- | First input port whose name contains `needle` (`""` = first port). This is
+-- | how a control surface (MidiFighter Twister) is located to listen on.
+findInput :: MidiAccess -> String -> Effect (Maybe MidiIn)
+findInput access needle = toMaybe <$> runEffectFn2 findInputImpl access needle
+
+-- | Subscribe to an input's messages. The handler runs on every incoming MIDI
+-- | message; the returned Effect unsubscribes (clears `onmidimessage`). Store it
+-- | and call it on teardown to avoid a leaked listener.
+onMessage :: MidiIn -> (MidiMsg -> Effect Unit) -> Effect (Effect Unit)
+onMessage inp k =
+  runEffectFn2 onMessageImpl inp (mkEffectFn3 \status data1 data2 -> k { status, data1, data2 })
 
 -- | Schedule a note: note-on at now + `delayMs`, note-off `durMs` later.
 -- | `channel` is 0-based (0 → MIDI channel 1).

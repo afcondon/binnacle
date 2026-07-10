@@ -23,6 +23,36 @@ export const findOutputImpl = (access, needle) => {
   return chosen;
 };
 
+export const inputNamesImpl = (access) => {
+  const names = [];
+  access.inputs.forEach((i) => names.push(i.name));
+  return names;
+};
+
+export const findInputImpl = (access, needle) => {
+  let chosen = null;
+  access.inputs.forEach((i) => {
+    if (chosen) return;
+    if (needle === "" || (i.name && i.name.indexOf(needle) >= 0)) chosen = i;
+  });
+  return chosen;
+};
+
+// Subscribe to an input's messages. `handler` is an EffectFn3 (a 3-arg JS
+// function). We forward the three data bytes; a running-status or malformed
+// short message just yields 0s. Returns an unsubscribe that clears the handler
+// only if it's still ours (so a re-subscribe doesn't get clobbered).
+export const onMessageImpl = (input, handler) => {
+  const cb = (ev) => {
+    const d = ev.data || [];
+    handler(d[0] | 0, d[1] | 0, d[2] | 0);
+  };
+  input.onmidimessage = cb;
+  return () => {
+    if (input.onmidimessage === cb) input.onmidimessage = null;
+  };
+};
+
 // Note-on at now+delayMs, note-off durMs later, via Web MIDI's timestamped
 // send — as jitter-immune as the es9 /cv/trig/at path.
 export const scheduleNoteImpl = (out, channel, note, velocity, delayMs, durMs) => {
