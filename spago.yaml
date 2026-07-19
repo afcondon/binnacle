@@ -20,4 +20,4 @@ package:
     - js-timers
 workspace:
   packageSet:
-    registry: 73.3.0
+    registry: 77.13.1
