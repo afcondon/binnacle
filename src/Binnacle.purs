@@ -27,6 +27,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Ref as Ref
+import Effect.Timer (setInterval)
 import Binnacle.Clock (Clock)
 import Binnacle.Clock as Clock
 import Binnacle.Output (clockSubscribe)
@@ -80,4 +81,23 @@ connect cfg = do
       }
   sock <- Transport.open cfg.url handlers
   Ref.write (Just sock) sockRef
+  -- KEEPALIVE. purerl-tidal's cowboy handler hangs up after 30 minutes of not
+  -- RECEIVING a frame, and the anchors it streams to us do not count — only
+  -- traffic in this direction does. So a browser left untouched gets
+  -- disconnected, which is why the rig went unresponsive after an hour away and
+  -- every morning after an overnight.
+  --
+  -- The transport now re-dials, so this is not what makes it survivable; it is
+  -- what stops the drop happening at all, which matters because a reconnect has
+  -- a window in it and the frame you lose is the one you pressed PANIC for.
+  --
+  -- `state` is the frame to send: read-only, already in the verb table, and it
+  -- costs the BEAM one ETS read. Every 10 minutes against a 30-minute timeout
+  -- leaves room for two to go missing before anything closes.
+  _ <- setInterval keepAliveMs (Transport.send sock "state")
   pure (Binnacle { socket: sock, clock: clk, appMsg: appRef })
+
+-- | How often to poke the rig so its idle timer never expires. A third of
+-- | purerl-tidal's 30-minute `idle_timeout`, so two can be missed safely.
+keepAliveMs :: Int
+keepAliveMs = 600000
