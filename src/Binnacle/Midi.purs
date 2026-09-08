@@ -20,6 +20,7 @@ module Binnacle.Midi
   , noteOnAt
   , noteOffAt
   , scheduleNoteAtMs
+  , sendCCAtMs
   , noteOnAtMs
   , noteOffAtMs
   ) where
@@ -56,6 +57,7 @@ foreign import noteOffAtImpl :: EffectFn4 MidiOut Int Int Number Unit
 -- Absolute-timestamp variants: the last Number is an ABSOLUTE performance.now ms,
 -- passed straight to Web MIDI's send (no fresh performance.now() at send time).
 foreign import scheduleNoteAtMsImpl :: EffectFn6 MidiOut Int Int Int Number Number Unit
+foreign import sendCCAtMsImpl :: EffectFn5 MidiOut Int Int Int Number Unit
 foreign import noteOnAtMsImpl :: EffectFn5 MidiOut Int Int Int Number Unit
 foreign import noteOffAtMsImpl :: EffectFn4 MidiOut Int Int Number Unit
 
@@ -102,6 +104,18 @@ scheduleNote out o =
 -- | (portamento on/off CC 65 + time CC 5) on the head's channel.
 sendCC :: MidiOut -> { channel :: Int, controller :: Int, value :: Int } -> Effect Unit
 sendCC out o = runEffectFn4 sendCCImpl out o.channel o.controller o.value
+
+-- | A control change timestamped on the performance clock, not sent at call
+-- | time. Needed wherever a CC must land a known interval BEFORE a note that is
+-- | itself scheduled ahead — the Rample's start point being the case in hand:
+-- | it selects which slice the next trigger plays, so arriving late plays the
+-- | previous slice, which sounds like a wrong note rather than like a fault.
+sendCCAtMs
+  :: MidiOut
+  -> { channel :: Int, controller :: Int, value :: Int, atMs :: Number }
+  -> Effect Unit
+sendCCAtMs out o =
+  runEffectFn5 sendCCAtMsImpl out o.channel o.controller o.value o.atMs
 
 -- | Note-on at now + `delayMs`, with no automatic note-off. The caller is
 -- | responsible for the matching `noteOffAt` (legato / tie / glide).

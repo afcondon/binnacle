@@ -86,6 +86,14 @@ export const scheduleNoteAtMsImpl = (out, channel, note, velocity, atMs, durMs) 
   out.send([0x80 | ch, note & 0x7f, 0], atMs + Math.max(1, durMs));
 };
 
+// A control change on the performance clock rather than at call time. The
+// Rample needs its start-point CC to land a fixed lead ahead of the trigger
+// note, and under a lookahead scheduler "now" is nowhere near when the note
+// sounds — so the CC has to be timestamped exactly as the note is.
+export const sendCCAtMsImpl = (out, channel, controller, value, atMs) => {
+  out.send([0xb0 | (channel & 0x0f), controller & 0x7f, value & 0x7f], atMs);
+};
+
 export const noteOnAtMsImpl = (out, channel, note, velocity, atMs) => {
   out.send([0x90 | (channel & 0x0f), note & 0x7f, velocity & 0x7f], atMs);
 };
