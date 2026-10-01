@@ -64,9 +64,10 @@ data Msg
   -- | usually still there.
   | Bye String
   -- | Vetula's harmonic context, which Odonus quantises to: a root pitch class
-  -- | and the scale's intervals. Sent by Vetula's page when it changes and in
-  -- | answer to `Hello`. The one piece of music that passes between machines.
-  | Scale { root :: Int, offsets :: Array Int }
+  -- | and the scale's intervals, and the chords as a Tidal note pattern
+  -- | (`harmony`, Nothing for none). Sent by Vetula's page when it changes and
+  -- | in answer to `Hello`. The one piece of music that passes between machines.
+  | Scale { root :: Int, offsets :: Array Int, harmony :: Maybe String }
 
 -- | The wire shape: a tag and whichever fields it needs.
 type Wire =
@@ -77,6 +78,7 @@ type Wire =
   , playing :: Boolean
   , root :: Nullable Int
   , offsets :: Nullable (Array Int)
+  , harmony :: Nullable String
   }
 
 open :: Effect Bus
@@ -100,10 +102,10 @@ encode = writeJSON <<< case _ of
   Panic -> wire "panic" Nothing Nothing false false
   Hello -> wire "hello" Nothing Nothing false false
   Bye m -> wire "bye" (Just m) Nothing false false
-  Scale sc -> (wire "scale" Nothing Nothing false false) { root = toNullable (Just sc.root), offsets = toNullable (Just sc.offsets) }
+  Scale sc -> (wire "scale" Nothing Nothing false false) { root = toNullable (Just sc.root), offsets = toNullable (Just sc.offsets), harmony = toNullable sc.harmony }
   where
   wire t machine alias edited playing =
-    { t, machine: toNullable machine, alias: toNullable alias, edited, playing, root: toNullable Nothing, offsets: toNullable Nothing } :: Wire
+    { t, machine: toNullable machine, alias: toNullable alias, edited, playing, root: toNullable Nothing, offsets: toNullable Nothing, harmony: toNullable Nothing } :: Wire
 
 decode :: String -> Maybe Msg
 decode text = do
@@ -118,7 +120,7 @@ decode text = do
     "scale", _ -> do
       root <- toMaybe w.root
       offsets <- toMaybe w.offsets
-      Just (Scale { root, offsets })
+      Just (Scale { root, offsets, harmony: toMaybe w.harmony })
     _, _ -> Nothing
 
 -- | Say `Bye` for each of these machines when the page goes away (closed,
