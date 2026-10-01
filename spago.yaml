@@ -18,6 +18,9 @@ package:
     - strings
     - nullable
     - js-timers
+    - either
+    - foldable-traversable
+    - simple-json
 workspace:
   packageSet:
     registry: 77.13.1
