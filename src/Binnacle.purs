@@ -20,6 +20,7 @@ module Binnacle
   , clock
   , socket
   , onAppMessage
+  , onOpen
   ) where
 
 import Prelude
@@ -46,6 +47,10 @@ newtype Binnacle = Binnacle
   -- an app registers one via `onAppMessage`. Anchor lines never reach it — they
   -- are consumed by the clock — so the app only sees protocol replies.
   , appMsg :: Ref.Ref (String -> Effect Unit)
+  -- App-level handler run on every (re)connect, and whether the socket is open
+  -- now, so a handler registered after the first open still runs once.
+  , appOpen :: Ref.Ref (Effect Unit)
+  , opened :: Ref.Ref Boolean
   }
 
 clock :: Binnacle -> Clock
@@ -59,11 +64,22 @@ socket (Binnacle b) = b.socket
 onAppMessage :: Binnacle -> (String -> Effect Unit) -> Effect Unit
 onAppMessage (Binnacle b) cb = Ref.write cb b.appMsg
 
+-- | Register (or replace) a handler run on every connect, and at once if the
+-- | socket is already open: what an app must re-establish with the rig after
+-- | a drop or a rig restart (a subscription, state the rig lost).
+onOpen :: Binnacle -> Effect Unit -> Effect Unit
+onOpen (Binnacle b) act = do
+  Ref.write act b.appOpen
+  isOpen <- Ref.read b.opened
+  when isOpen act
+
 connect :: Config -> Effect Binnacle
 connect cfg = do
   clk <- Clock.newClock { tempo: cfg.tempo }
   sockRef <- Ref.new Nothing
   appRef <- Ref.new (\_ -> pure unit)
+  openRef <- Ref.new (pure unit)
+  openedRef <- Ref.new false
   let
     handlers =
       { onOpen: do
@@ -71,13 +87,15 @@ connect cfg = do
           case msock of
             Just s -> clockSubscribe s
             Nothing -> pure unit
+          Ref.write true openedRef
+          join (Ref.read openRef)
       , onMessage: \msg ->
           case Clock.parseAnchorLine msg of
             Just a -> Clock.ingestAnchor clk a
             Nothing -> do
               cb <- Ref.read appRef
               cb msg
-      , onClose: pure unit
+      , onClose: Ref.write false openedRef
       }
   sock <- Transport.open cfg.url handlers
   Ref.write (Just sock) sockRef
@@ -95,7 +113,7 @@ connect cfg = do
   -- costs the BEAM one ETS read. Every 10 minutes against a 30-minute timeout
   -- leaves room for two to go missing before anything closes.
   _ <- setInterval keepAliveMs (Transport.send sock "state")
-  pure (Binnacle { socket: sock, clock: clk, appMsg: appRef })
+  pure (Binnacle { socket: sock, clock: clk, appMsg: appRef, appOpen: openRef, opened: openedRef })
 
 -- | How often to poke the rig so its idle timer never expires. A third of
 -- | purerl-tidal's 30-minute `idle_timeout`, so two can be missed safely.
