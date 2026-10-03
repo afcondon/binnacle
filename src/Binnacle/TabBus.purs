@@ -14,6 +14,11 @@
 -- | - The dashboard sends commands: play or stop one machine, Panic, and
 -- |   `Hello`, which asks every page to announce itself now.
 -- |
+-- | - A mark is made rig-wide: the marking page says `Marked`, and every
+-- |   other machine's page answers with its machine as text at that moment
+-- |   (`Snapshot`), which the marking page keeps with its mark
+-- |   (docs/kb/plans/the-deck.md).
+-- |
 -- | Commands only, never audio or timing: each machine still keeps its own time.
 -- | The mode (Solo or Atlantis) is not on the bus; it is a stored preference, and
 -- | pages follow it through `Transport.Store.onChange`.
@@ -63,11 +68,10 @@ data Msg
   -- | slows a background tab's timers to once a minute, so a quiet tab is
   -- | usually still there.
   | Bye String
-  -- | Vetula's harmonic context, which Odonus quantises to: a root pitch class
-  -- | and the scale's intervals, and the chords as a Tidal note pattern
-  -- | (`harmony`, Nothing for none). Sent by Vetula's page when it changes and
-  -- | in answer to `Hello`. The one piece of music that passes between machines.
-  | Scale { root :: Int, offsets :: Array Int, harmony :: Maybe String }
+  -- | `by` (a machine's slot) made a mark; `at` names it.
+  | Marked { at :: Number, by :: String }
+  -- | `machine` as text at the mark `at` made by `by`, for `by` to keep.
+  | Snapshot { at :: Number, by :: String, machine :: String, text :: String }
 
 -- | The wire shape: a tag and whichever fields it needs.
 type Wire =
@@ -76,9 +80,9 @@ type Wire =
   , alias :: Nullable String
   , edited :: Boolean
   , playing :: Boolean
-  , root :: Nullable Int
-  , offsets :: Nullable (Array Int)
-  , harmony :: Nullable String
+  , at :: Nullable Number
+  , by :: Nullable String
+  , text :: Nullable String
   }
 
 open :: Effect Bus
@@ -102,10 +106,13 @@ encode = writeJSON <<< case _ of
   Panic -> wire "panic" Nothing Nothing false false
   Hello -> wire "hello" Nothing Nothing false false
   Bye m -> wire "bye" (Just m) Nothing false false
-  Scale sc -> (wire "scale" Nothing Nothing false false) { root = toNullable (Just sc.root), offsets = toNullable (Just sc.offsets), harmony = toNullable sc.harmony }
+  Marked m -> (wire "marked" Nothing Nothing false false) { at = toNullable (Just m.at), by = toNullable (Just m.by) }
+  Snapshot n -> (wire "snapshot" (Just n.machine) Nothing false false)
+    { at = toNullable (Just n.at), by = toNullable (Just n.by), text = toNullable (Just n.text) }
   where
   wire t machine alias edited playing =
-    { t, machine: toNullable machine, alias: toNullable alias, edited, playing, root: toNullable Nothing, offsets: toNullable Nothing, harmony: toNullable Nothing } :: Wire
+    { t, machine: toNullable machine, alias: toNullable alias, edited, playing
+    , at: toNullable Nothing, by: toNullable Nothing, text: toNullable Nothing } :: Wire
 
 decode :: String -> Maybe Msg
 decode text = do
@@ -117,10 +124,15 @@ decode text = do
     "panic", _ -> Just Panic
     "hello", _ -> Just Hello
     "bye", Just m -> Just (Bye m)
-    "scale", _ -> do
-      root <- toMaybe w.root
-      offsets <- toMaybe w.offsets
-      Just (Scale { root, offsets, harmony: toMaybe w.harmony })
+    "marked", _ -> do
+      at <- toMaybe w.at
+      by <- toMaybe w.by
+      Just (Marked { at, by })
+    "snapshot", Just machine -> do
+      at <- toMaybe w.at
+      by <- toMaybe w.by
+      text <- toMaybe w.text
+      Just (Snapshot { at, by, machine, text })
     _, _ -> Nothing
 
 -- | Say `Bye` for each of these machines when the page goes away (closed,
