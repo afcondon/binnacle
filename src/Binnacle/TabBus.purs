@@ -32,14 +32,15 @@ module Binnacle.TabBus
   , post
   , onMessage
   , sayGoodbye
+  , decode
   ) where
 
 import Prelude
 
 import Data.Either (hush)
 import Data.Foldable (for_)
-import Data.Maybe (Maybe(..))
-import Data.Nullable (Nullable, toMaybe, toNullable)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Nullable (Nullable, toNullable)
 import Effect (Effect)
 import Simple.JSON (readJSON, writeJSON)
 
@@ -85,6 +86,23 @@ type Wire =
   , text :: Nullable String
   }
 
+-- | The shape as read: every field but the tag optional, absent or null
+-- | alike. A page is often a build or two behind another (a tab left open,
+-- | a bundle not rebuilt), and reading the writer's exact shape made each
+-- | new field deafen every older page: Conspicillum, built before `at`, `by`
+-- | and `text`, was dropped by the dashboard and could not hear it either
+-- | (2026-10-04). So a reader takes what it needs and ignores the rest.
+type WireIn =
+  { t :: String
+  , machine :: Maybe String
+  , alias :: Maybe String
+  , edited :: Maybe Boolean
+  , playing :: Maybe Boolean
+  , at :: Maybe Number
+  , by :: Maybe String
+  , text :: Maybe String
+  }
+
 open :: Effect Bus
 open = _open "atlantis"
 
@@ -116,22 +134,22 @@ encode = writeJSON <<< case _ of
 
 decode :: String -> Maybe Msg
 decode text = do
-  w <- hush (readJSON text :: _ Wire)
-  case w.t, toMaybe w.machine of
-    "state", Just m -> Just (State { machine: m, alias: toMaybe w.alias, edited: w.edited, playing: w.playing })
+  w <- hush (readJSON text :: _ WireIn)
+  case w.t, w.machine of
+    "state", Just m -> Just (State { machine: m, alias: w.alias, edited: fromMaybe false w.edited, playing: fromMaybe false w.playing })
     "play", Just m -> Just (Play m)
     "stop", Just m -> Just (Stop m)
     "panic", _ -> Just Panic
     "hello", _ -> Just Hello
     "bye", Just m -> Just (Bye m)
     "marked", _ -> do
-      at <- toMaybe w.at
-      by <- toMaybe w.by
+      at <- w.at
+      by <- w.by
       Just (Marked { at, by })
     "snapshot", Just machine -> do
-      at <- toMaybe w.at
-      by <- toMaybe w.by
-      text <- toMaybe w.text
+      at <- w.at
+      by <- w.by
+      text <- w.text
       Just (Snapshot { at, by, machine, text })
     _, _ -> Nothing
 
