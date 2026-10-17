@@ -21,6 +21,12 @@ package:
     - either
     - foldable-traversable
     - simple-json
+    - helm
+    - arrays
 workspace:
   packageSet:
     registry: 77.13.1
+  extraPackages:
+    # The one Web MIDI FFI (music/helm).
+    helm:
+      path: ../../helm
