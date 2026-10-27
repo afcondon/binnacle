@@ -36,7 +36,7 @@ import Binnacle.Transport (Socket)
 import Binnacle.Transport as Transport
 
 type Config =
-  { url :: String     -- rig WebSocket, e.g. "ws://127.0.0.1:3012/ws"
+  { url :: String     -- rig WebSocket, e.g. "ws://127.0.0.1:3012/ws"; "" = none (never dials)
   , tempo :: Number   -- free-run fallback tempo until an anchor arrives
   }
 

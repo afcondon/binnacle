@@ -66,7 +66,11 @@ export const openImpl = (url, handlers) => {
     handle.timer = setTimeout(dial, delay);
   };
 
-  dial();
+  // No URL: a page with no rig to reach (Triggerfish's web build, 2026-10-27)
+  // never dials, so it never retries, never fills the console, and never asks
+  // the browser for the local network. It is a socket that is never open:
+  // sends drop, as they do between reconnects.
+  if (url) dial();
   return handle;
 };
 
