@@ -22,12 +22,12 @@ and sends `anchor.encode()`.
 
 ## Depending on it
 
-Diaphus, es9-daemon and Itajara take it by path, which works only with the
-repositories checked out side by side under `music/`. A repository that has
-to build from a lone clone should take it from git instead:
+Diaphus, es9-daemon and Itajara take it from git at a pinned commit, so that
+each of those repositories builds from a lone clone:
 
 ```toml
 link-anchor = { git = "https://github.com/afcondon/binnacle", rev = "<commit>" }
 ```
 
-Cargo finds the crate inside the repository by its package name.
+Cargo finds the crate inside the repository by its package name. After a
+change here, push Binnacle and move the `rev` in each of the three.
