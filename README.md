@@ -57,7 +57,7 @@ the implementation can move into es9-daemon later without changing apps.
 
 | Frame | Meaning |
 |-------|---------|
-| `anchor <unixMicros> <beat> <tempo> <quantum>` | The Ableton Link affine map, forwarded ~10 Hz once subscribed. `unixMicros` is the int64 wall-clock timestamp; extrapolate `beat(t) = beat + (t − unixMicros)·tempo/60e6`. The browser maps host-time via `Date.now()` (same wall clock on the rig host — no NTP handshake). |
+| `anchor <unixMicros> <beat> <tempo> <quantum>` | The Ableton Link affine map, forwarded ~10 Hz once subscribed. **Declared for the whole rig in [`conformance/LINK-ANCHOR.md`](conformance/LINK-ANCHOR.md)**, with the validity rule and the vectors every implementation replays. `unixMicros` is the int64 wall-clock timestamp; extrapolate `beat(t) = beat + (t − unixMicros)·tempo/60e6`. The browser maps host-time via `Date.now()` (same wall clock on the rig host — no NTP handshake). |
 
 ### client → server
 

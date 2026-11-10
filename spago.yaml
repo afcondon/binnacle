@@ -23,6 +23,12 @@ package:
     - simple-json
     - helm
     - arrays
+  test:
+    main: Test.Main
+    dependencies:
+      - console
+      - exceptions
+      - foreign
 workspace:
   packageSet:
     registry: 77.13.1

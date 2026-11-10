@@ -25,10 +25,13 @@ module Binnacle
 
 import Prelude
 
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Ref as Ref
 import Effect.Timer (setInterval)
+import Binnacle.Anchor (Refusal(..))
+import Binnacle.Anchor as Anchor
 import Binnacle.Clock (Clock)
 import Binnacle.Clock as Clock
 import Binnacle.Output (clockSubscribe)
@@ -90,11 +93,15 @@ connect cfg = do
           Ref.write true openedRef
           join (Ref.read openRef)
       , onMessage: \msg ->
-          case Clock.parseAnchorLine msg of
-            Just a -> Clock.ingestAnchor clk a
-            Nothing -> do
+          case Anchor.parseLine msg of
+            Right anchor -> Clock.ingestAnchor clk anchor
+            -- Somebody else's frame: the app's.
+            Left NotAnAnchor -> do
               cb <- Ref.read appRef
               cb msg
+            -- An `anchor` frame that fails the rig's validity rule. Counted
+            -- on the clock and not passed on: the app never saw anchors.
+            Left _ -> Clock.refuseAnchor clk
       , onClose: Ref.write false openedRef
       }
   sock <- Transport.open cfg.url handlers

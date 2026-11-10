@@ -22,7 +22,11 @@
           ]
         },
         "test": {
-          "dependencies": []
+          "dependencies": [
+            "console",
+            "exceptions",
+            "foreign"
+          ]
         }
       }
     },
@@ -736,6 +740,15 @@
         "tuples"
       ]
     },
+    "console": {
+      "type": "registry",
+      "version": "6.1.0",
+      "integrity": "sha256-3T5PPz1mATZmV0C4GzkCkpLlCa5xG7u8ZNgnLrrrI1Q=",
+      "dependencies": [
+        "effect",
+        "prelude"
+      ]
+    },
     "const": {
       "type": "registry",
       "version": "6.0.0",
@@ -973,6 +986,7 @@
         "ordered-collections",
         "prelude",
         "refs",
+        "strings",
         "tuples"
       ]
     },

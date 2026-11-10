@@ -1,0 +1,15 @@
+[package]
+name = "link-anchor"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "/link/anchor, the Atlantis rig's beat: the value, its validity rule, the 56-byte OSC packet and the extrapolation, held to Binnacle's conformance vectors"
+
+# No dependencies. The packet's layout is fixed, so reading it is comparing
+# 24 bytes and taking four big-endian numbers; no OSC library is needed, and
+# a consumer on an audio path takes nothing it did not ask for.
+[dependencies]
+
+[dev-dependencies]
+# For tests/conformance.rs only: reading the vector file.
+serde_json = "1"

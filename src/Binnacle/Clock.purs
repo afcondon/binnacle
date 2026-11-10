@@ -9,11 +9,12 @@
 -- | The browser maps host-time to its own clock via Date.now() (same wall
 -- | clock as link-spike on the rig host), so no NTP handshake is needed.
 module Binnacle.Clock
-  ( Anchor(..)
+  ( module Reexport
   , Clock
   , ClockReading
   , newClock
   , ingestAnchor
+  , refuseAnchor
   , setFreeBaseline
   , parseAnchorLine
   , read
@@ -24,23 +25,15 @@ module Binnacle.Clock
 
 import Prelude
 
+import Data.Either (hush)
 import Data.Int (floor, toNumber)
 import Data.Maybe (Maybe(..))
-import Data.Number as Number
-import Data.String (Pattern(..))
-import Data.String as String
 import Effect (Effect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Binnacle.Anchor (Anchor(..), beatAt, isFresh, parseLine, unixMicrosAt)
+import Binnacle.Anchor (Anchor(..)) as Reexport
 import Binnacle.Time (dateNow, perfNow)
-
--- | The Link affine map as forwarded by the rig.
-newtype Anchor = Anchor
-  { unixMicros :: Number
-  , beat :: Number
-  , tempo :: Number
-  , quantum :: Number
-  }
 
 type ClockState =
   { anchor :: Maybe Anchor
@@ -50,14 +43,16 @@ type ClockState =
   , freeQuantum :: Number
   , freeStartMicros :: Number      -- unixMicros at which free-run beat = 0
   , anchorCount :: Int             -- anchors ingested (diagnostic heartbeat)
+  , anchorsRefused :: Int          -- anchor frames that failed the validity rule
   }
 
 newtype Clock = Clock (Ref ClockState)
 
--- | An anchor older than this (no fresh packet) drops us back to free-run.
--- | link-spike publishes at 10 Hz, so 2 s ≈ 20 missed packets.
-staleMs :: Number
-staleMs = 2000.0
+-- | Whether the anchor adopted at `anchorPerf` still drives the clock at
+-- | `perf` (both `performance.now` milliseconds). The rule is the rig's:
+-- | fresh until two seconds after it was received, inclusive.
+freshAt :: Number -> Number -> Boolean
+freshAt anchorPerf perf = isFresh ((perf - anchorPerf) * 1000.0)
 
 type ClockReading =
   { beat :: Number     -- absolute Link beats since beat 0
@@ -67,6 +62,7 @@ type ClockReading =
   , quantum :: Number  -- beats per bar
   , locked :: Boolean  -- true once a fresh anchor is driving the clock
   , anchorCount :: Int -- total anchors ingested (climbs while the rig feeds us)
+  , anchorsRefused :: Int -- anchor frames refused; non-zero means the rig is sending bad ones
   }
 
 -- | Construct a clock. Measures the wall-clock↔monotonic offset once and
@@ -84,6 +80,7 @@ newClock cfg = do
     , freeQuantum: 4.0
     , freeStartMicros: d * 1000.0
     , anchorCount: 0
+    , anchorsRefused: 0
     }
   pure (Clock ref)
 
@@ -100,6 +97,13 @@ ingestAnchor (Clock ref) a = do
   p <- perfNow
   Ref.modify_ (\s -> s { anchor = Just a, anchorPerf = p, anchorCount = s.anchorCount + 1 }) ref
 
+-- | Note a frame that began `anchor` and failed the validity rule. The held
+-- | anchor is untouched; the count shows in every reading, so a clock that is
+-- | hearing bad anchors does not look like one hearing none.
+refuseAnchor :: Clock -> Effect Unit
+refuseAnchor (Clock ref) =
+  Ref.modify_ (\s -> s { anchorsRefused = s.anchorsRefused + 1 }) ref
+
 -- | Override the free-run baseline. Several clocks given the same baseline
 -- | share one free-run timeline (and downbeat) with no rig — the laptop-only
 -- | analogue of all of them locking to one Link anchor. Touches only the
@@ -109,18 +113,12 @@ setFreeBaseline :: Clock -> { startMicros :: Number, tempo :: Number } -> Effect
 setFreeBaseline (Clock ref) b =
   Ref.modify_ (_ { freeStartMicros = b.startMicros, freeTempo = b.tempo }) ref
 
--- | Parse an Atlantis Sync Protocol anchor frame:
--- | `anchor <unixMicros> <beat> <tempo> <quantum>`.
+-- | A valid anchor from an Atlantis Sync Protocol frame,
+-- | `anchor <unixMicros> <beat> <tempo> <quantum>`, or `Nothing`. The grammar
+-- | and the validity rule are `Binnacle.Anchor`'s. A caller that needs to
+-- | tell a refused anchor from somebody else's frame uses `parseLine` there.
 parseAnchorLine :: String -> Maybe Anchor
-parseAnchorLine line =
-  case String.split (Pattern " ") (String.trim line) of
-    [ tag, u, b, t, q ] | tag == "anchor" -> ado
-      unixMicros <- Number.fromString u
-      beat <- Number.fromString b
-      tempo <- Number.fromString t
-      quantum <- Number.fromString q
-      in Anchor { unixMicros, beat, tempo, quantum }
-    _ -> Nothing
+parseAnchorLine = parseLine >>> hush
 
 -- | Read the clock now.
 read :: Clock -> Effect ClockReading
@@ -131,11 +129,11 @@ read (Clock ref) = do
   let reading beat tempo quantum locked =
         let bar = floor (beat / quantum)
         in { beat, bar, phase: beat - toNumber bar * quantum, tempo, quantum, locked
-           , anchorCount: st.anchorCount }
+           , anchorCount: st.anchorCount
+           , anchorsRefused: st.anchorsRefused }
   pure case st.anchor of
-    Just (Anchor a) | (p - st.anchorPerf) < staleMs ->
-      reading (a.beat + (nowMicros - a.unixMicros) * a.tempo / 60000000.0)
-              a.tempo a.quantum true
+    Just anchor@(Anchor a) | freshAt st.anchorPerf p ->
+      reading (beatAt anchor nowMicros) a.tempo a.quantum true
     _ ->
       reading ((nowMicros - st.freeStartMicros) * st.freeTempo / 60000000.0)
               st.freeTempo st.freeQuantum false
@@ -147,8 +145,8 @@ beatToUnixMicros (Clock ref) targetBeat = do
   st <- Ref.read ref
   p <- perfNow
   pure case st.anchor of
-    Just (Anchor a) | (p - st.anchorPerf) < staleMs ->
-      a.unixMicros + (targetBeat - a.beat) * 60000000.0 / a.tempo
+    Just anchor | freshAt st.anchorPerf p ->
+      unixMicrosAt anchor targetBeat
     _ ->
       st.freeStartMicros + targetBeat * 60000000.0 / st.freeTempo
 
