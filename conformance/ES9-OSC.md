@@ -68,15 +68,18 @@ reading them until that encoder is replaced by the declared one.
 sender anywhere on the rig. They are declared because the daemon reads
 them. They are candidates for removal.
 
-## Who writes
+## Who writes, and who reads
+
+es9-daemon, the one reader, replays `packets` and `tolerated` in
+`cargo test` (`osc_tests`).
 
 | Program | Language | Sends | Held by |
 |---|---|---|---|
 | Architeuthis (`es9_cv.erl`) | Erlang | `/cv`, `/cv/slew`, `/cv/trig/at` | not yet |
 | Architeuthis (`Tidal/OSC.erl`) | Erlang | `/cv`, `/cv/trig`, `/tidal/gate/trig`, `/esx`, `/esx5gate` | not yet |
 | Architeuthis (`Handler.erl`, the browser relay) | Erlang | `/cv`, `/cv/slew`, `/cv/trig/at` | not yet |
-| DeepStar (`internal/rig/osc.go`) | Go | `/cv`, `/cv/trig`, `/esx` | not yet |
-| Friends server (`server.mjs`) | JavaScript | `/cv`, `/cv/trig`, `/cv/trig/at`, `/esx`, `/esx5gate` | not yet |
+| DeepStar (`internal/rig/osc.go`) | Go | `/cv`, `/cv/trig`, `/esx` | `go test ./internal/rig` (`wire_test.go`) |
+| Friends server (`server.mjs`) | JavaScript | `/cv`, `/cv/trig`, `/cv/trig/at`, `/esx`, `/esx5gate` | `node conformance/wire.mjs`, against the real server |
 | Diaphus (`--debug-beat` only) | Rust | `/cv/trig/at` | not yet |
 
 ## Conforming

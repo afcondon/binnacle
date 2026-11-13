@@ -63,14 +63,17 @@ step, taken only when `tolerated` is empty.
   (`Tidal/MIDIBridge.erl`). Itajara sends the declared binary64. This is
   the one address on this wire that two senders encode differently.
 
-## Who writes
+## Who writes, and who reads
+
+Diaphus, the one reader, replays `packets` and `tolerated` in `cargo test`
+(`inbound_tests`).
 
 | Program | Language | Sends | Held by |
 |---|---|---|---|
 | Architeuthis (`Tidal/MIDIBridge.erl`) | Erlang | the four `/midi/…/at`, `/link/set-tempo` | not yet |
-| DeepStar (`internal/rig/midi.go`) | Go | `/midi/note/at`, `/midi/cc/at` | not yet |
-| Itajara (`daemon/src/link.rs`) | Rust | `/link/set-tempo`, `/link/play` | not yet |
-| fh2-config (`FH2/ClockOrigin.js`) | JavaScript | `/clock/restart` | not yet |
+| DeepStar (`internal/rig/midi.go`) | Go | `/midi/note/at`, `/midi/cc/at` | `go test ./internal/rig` (`wire_test.go`) |
+| Itajara (`daemon/src/link.rs`) | Rust | `/link/set-tempo`, `/link/play` | `cargo test` (`link::writer_tests`) |
+| fh2-config (`FH2/ClockOrigin.js`) | JavaScript | `/clock/restart` | `node conformance/wire.mjs` |
 | Reef's conformance emitter, Diaphus's probe | JavaScript, Python | `/midi/note/at` | not yet |
 
 ## Conforming
