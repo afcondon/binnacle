@@ -2,11 +2,14 @@
 -- | `conformance/LINK-PEERS.md`; the vectors every implementation replays
 -- | are generated from here by `make vectors`.
 -- |
--- | Written by hand, in the plainest way, as one half of a spike: see
--- | `docs/kb/plans/wire-declarations.md`, step 1. It lives under `test/`
--- | because no browser reads this message.
+-- | The message is described once, in `Reference.Described`, and everything
+-- | here is derived from that description by Hawser. Until 2026-11-13 this
+-- | module was written out by hand; the description was held to that
+-- | version on every case before it replaced it, and the vector file did
+-- | not change. It lives under `test/` because no browser reads this
+-- | message.
 module Reference.LinkPeers
-  ( Refusal(..)
+  ( Refusal
   , header
   , packetLength
   , encode
@@ -20,81 +23,47 @@ module Reference.LinkPeers
 import Prelude
 
 import Binnacle.Anchor (Verdict(..))
-import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Int.Bits (shl, shr, (.&.), (.|.))
+import Hawser.Bytes (int32ToBytes)
+import Hawser.Osc as Osc
+import Reference.Described (peers)
 
-data Refusal
-  -- | A different message altogether. Not an error, and not counted.
-  = NotPeers
-  -- | The address is ours but the type tags are not exactly `,i`.
-  | WrongTypeTags
-  -- | The address and tags are ours but the packet is not exactly 20 bytes.
-  | WrongLength
-  -- | The count is below zero.
-  | NegativeCount
+-- | Why a packet is not a count we will use: the declaration's tag, or
+-- | `not-peers` for a packet that was never this message.
+type Refusal = String
 
-derive instance Eq Refusal
+notPeers :: Refusal
+notPeers = "not-peers"
 
--- | `/link/peers` and `,i`, each NUL-terminated and padded to four bytes.
 header :: Array Int
-header =
-  -- /   l    i    n    k    /   p    e    e    r    s   NUL
-  [ 47, 108, 105, 110, 107, 47, 112, 101, 101, 114, 115, 0
-  -- ,   i   NUL padding
-  , 44, 105, 0, 0
-  ]
+header = Osc.header peers
 
-addressLength :: Int
-addressLength = 12
-
--- | Header (16) plus one int32 (4).
 packetLength :: Int
-packetLength = 20
+packetLength = Osc.packetLength peers
 
 -- | The packet for a valid count. A producer sends nothing else.
 encode :: Int -> Either Refusal (Array Int)
-encode peers
-  | peers < 0 = Left NegativeCount
-  | otherwise = Right (encodeUnchecked peers)
+encode count = Osc.encode peers { peers: count }
 
 -- | The packet for any count, valid or not. For building test vectors.
 encodeUnchecked :: Int -> Array Int
-encodeUnchecked peers = header <> int32Bytes peers
+encodeUnchecked count = Osc.encodeUnchecked peers { peers: count }
 
 -- | Read one UDP datagram.
 decode :: Array Int -> Either Refusal Int
-decode bytes
-  | Array.take addressLength bytes /= Array.take addressLength header = Left NotPeers
-  | Array.take (Array.length header) bytes /= header = Left WrongTypeTags
-  | Array.length bytes /= packetLength = Left WrongLength
-  | otherwise =
-      case Array.drop (Array.length header) bytes of
-        [ first, second, third, fourth ] ->
-          let
-            peers = (first `shl` 24) .|. (second `shl` 16) .|. (third `shl` 8) .|. fourth
-          in
-            if peers < 0 then Left NegativeCount else Right peers
-        _ -> Left WrongLength
-
--- | Four big-endian bytes of a signed 32-bit integer.
-int32Bytes :: Int -> Array Int
-int32Bytes value =
-  [ (value `shr` 24) .&. 255
-  , (value `shr` 16) .&. 255
-  , (value `shr` 8) .&. 255
-  , value .&. 255
-  ]
+decode packet = case Osc.decode peers packet of
+  Osc.Accept record -> Right record.peers
+  Osc.Refuse tag -> Left tag
+  Osc.Other -> Left notPeers
 
 verdictOf :: forall a. Either Refusal a -> Verdict
 verdictOf = case _ of
   Right _ -> Accept
-  Left NotPeers -> Other
+  Left refusal | refusal == notPeers -> Other
   Left _ -> Refuse
 
 refusalName :: Refusal -> String
-refusalName = case _ of
-  NotPeers -> "not-peers"
-  WrongTypeTags -> "wrong-type-tags"
-  WrongLength -> "wrong-length"
-  NegativeCount -> "negative-count"
+refusalName = identity
+
+int32Bytes :: Int -> Array Int
+int32Bytes = int32ToBytes

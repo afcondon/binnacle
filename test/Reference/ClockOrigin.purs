@@ -2,11 +2,14 @@
 -- | `conformance/CLOCK-ORIGIN.md`; the vectors every implementation replays
 -- | are generated from here by `make vectors`.
 -- |
--- | Written by hand, in the plainest way, as one half of a spike: see
--- | `docs/kb/plans/wire-declarations.md`, step 1. It lives under `test/`
--- | because no browser reads this message.
+-- | The message is described once, in `Reference.Described`, and everything
+-- | here is derived from that description by Hawser. Until 2026-11-13 this
+-- | module was written out by hand; the description was held to that
+-- | version on every case before it replaced it, and the vector file did
+-- | not change. It lives under `test/` because no browser reads this
+-- | message.
 module Reference.ClockOrigin
-  ( Refusal(..)
+  ( Refusal
   , header
   , packetLength
   , encode
@@ -18,70 +21,44 @@ module Reference.ClockOrigin
 
 import Prelude
 
-import Binnacle.Anchor (Verdict(..), float64Bytes, float64FromBytes)
-import Data.Array as Array
+import Binnacle.Anchor (Verdict(..))
 import Data.Either (Either(..))
-import Data.Number as Number
+import Hawser.Osc as Osc
+import Reference.Described (origin)
 
-data Refusal
-  -- | A different message altogether. Not an error, and not counted.
-  = NotOrigin
-  -- | The address is ours but the type tags are not exactly `,d`.
-  | WrongTypeTags
-  -- | The address and tags are ours but the packet is not exactly 28 bytes.
-  | WrongLength
-  -- | The beat is NaN or infinite.
-  | NonFiniteValue
+-- | Why a packet is not an origin we will use: the declaration's tag, or
+-- | `not-origin` for a packet that was never this message.
+type Refusal = String
 
-derive instance Eq Refusal
+notOrigin :: Refusal
+notOrigin = "not-origin"
 
--- | `/clock/origin` and `,d`, each NUL-terminated and padded to four bytes.
 header :: Array Int
-header =
-  -- /   c   l    o    c   k    /   o    r    i    g    i    n   NUL padding
-  [ 47, 99, 108, 111, 99, 107, 47, 111, 114, 105, 103, 105, 110, 0, 0, 0
-  -- ,   d   NUL padding
-  , 44, 100, 0, 0
-  ]
+header = Osc.header origin
 
-addressLength :: Int
-addressLength = 16
-
--- | Header (20) plus one float64 (8).
 packetLength :: Int
-packetLength = 28
+packetLength = Osc.packetLength origin
 
 -- | The packet for a valid origin. A producer sends nothing else.
 encode :: Number -> Either Refusal (Array Int)
-encode beat
-  | not (Number.isFinite beat) = Left NonFiniteValue
-  | otherwise = Right (encodeUnchecked beat)
+encode beat = Osc.encode origin { beat }
 
 -- | The packet for any number, valid or not. For building test vectors.
 encodeUnchecked :: Number -> Array Int
-encodeUnchecked beat = header <> float64Bytes beat
+encodeUnchecked beat = Osc.encodeUnchecked origin { beat }
 
 -- | Read one UDP datagram.
 decode :: Array Int -> Either Refusal Number
-decode bytes
-  | Array.take addressLength bytes /= Array.take addressLength header = Left NotOrigin
-  | Array.take (Array.length header) bytes /= header = Left WrongTypeTags
-  | Array.length bytes /= packetLength = Left WrongLength
-  | otherwise =
-      let
-        beat = float64FromBytes (Array.drop (Array.length header) bytes)
-      in
-        if Number.isFinite beat then Right beat else Left NonFiniteValue
+decode packet = case Osc.decode origin packet of
+  Osc.Accept record -> Right record.beat
+  Osc.Refuse tag -> Left tag
+  Osc.Other -> Left notOrigin
 
 verdictOf :: forall a. Either Refusal a -> Verdict
 verdictOf = case _ of
   Right _ -> Accept
-  Left NotOrigin -> Other
+  Left refusal | refusal == notOrigin -> Other
   Left _ -> Refuse
 
 refusalName :: Refusal -> String
-refusalName = case _ of
-  NotOrigin -> "not-origin"
-  WrongTypeTags -> "wrong-type-tags"
-  WrongLength -> "wrong-length"
-  NonFiniteValue -> "non-finite-value"
+refusalName = identity

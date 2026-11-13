@@ -29,6 +29,7 @@ package:
       - console
       - exceptions
       - foreign
+      - hawser
 workspace:
   packageSet:
     registry: 77.13.1
@@ -36,3 +37,6 @@ workspace:
     # The one Web MIDI FFI (music/helm).
     helm:
       path: ../../helm
+    # Wire descriptions, for the conformance references under test/ only.
+    hawser:
+      path: ../../../purescript-hylograph-libs/purescript-hawser

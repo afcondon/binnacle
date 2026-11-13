@@ -25,7 +25,8 @@
           "dependencies": [
             "console",
             "exceptions",
-            "foreign"
+            "foreign",
+            "hawser"
           ]
         }
       }
@@ -680,6 +681,9 @@
       }
     },
     "extra_packages": {
+      "hawser": {
+        "path": "../../../purescript-hylograph-libs/purescript-hawser"
+      },
       "helm": {
         "path": "../../helm"
       }
@@ -705,6 +709,24 @@
         "tailrec",
         "transformers",
         "unsafe-coerce"
+      ]
+    },
+    "argonaut-core": {
+      "type": "registry",
+      "version": "7.0.0",
+      "integrity": "sha256-gYZihtBIKthVuXXoiPphMookSf8M5aHyFYkcIWqlxTM=",
+      "dependencies": [
+        "arrays",
+        "control",
+        "either",
+        "foreign-object",
+        "functions",
+        "gen",
+        "maybe",
+        "nonempty",
+        "prelude",
+        "strings",
+        "tailrec"
       ]
     },
     "arrays": {
@@ -967,6 +989,23 @@
         "tailrec",
         "tuples",
         "unfoldable"
+      ]
+    },
+    "hawser": {
+      "type": "local",
+      "path": "../../../purescript-hylograph-libs/purescript-hawser",
+      "dependencies": [
+        "argonaut-core",
+        "arrays",
+        "either",
+        "foldable-traversable",
+        "foreign-object",
+        "integers",
+        "maybe",
+        "numbers",
+        "prelude",
+        "strings",
+        "tuples"
       ]
     },
     "helm": {
