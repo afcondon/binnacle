@@ -2,9 +2,9 @@
 // record happened to be built in. Keys not listed keep their place after
 // the listed ones.
 const order = [
-  "link-anchor-vectors", "declaration", "generatedBy", "constants",
+  "link-anchor-vectors", "link-peers-vectors", "clock-origin-vectors", "declaration", "generatedBy", "constants",
   "osc", "text", "beatAt", "fresh",
-  "name", "why", "hex", "line", "expect", "reason", "anchor",
+  "name", "why", "hex", "line", "expect", "reason", "anchor", "peers",
   "atUnixMicros", "ageMicros",
   "unixMicros", "beat", "tempo", "quantum",
 ];

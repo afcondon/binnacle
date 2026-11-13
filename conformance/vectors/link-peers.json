@@ -1,0 +1,131 @@
+{
+  "link-peers-vectors": 1,
+  "declaration": "conformance/LINK-PEERS.md",
+  "generatedBy": "Test.Companions in binnacle; do not edit by hand, run `make vectors`",
+  "constants": {
+    "oscPacketLength": 20,
+    "peersMaximum": 2147483647
+  },
+  "osc": [
+    {
+      "name": "alone",
+      "why": "no other peer on the session",
+      "hex": "2f6c696e6b2f7065657273002c69000000000000",
+      "expect": "accept",
+      "peers": 0
+    },
+    {
+      "name": "three",
+      "why": "an ordinary count",
+      "hex": "2f6c696e6b2f7065657273002c69000000000003",
+      "expect": "accept",
+      "peers": 3
+    },
+    {
+      "name": "maximum",
+      "why": "the largest count the packet holds",
+      "hex": "2f6c696e6b2f7065657273002c6900007fffffff",
+      "expect": "accept",
+      "peers": 2147483647
+    },
+    {
+      "name": "minus-one",
+      "why": "a count below zero",
+      "hex": "2f6c696e6b2f7065657273002c690000ffffffff",
+      "expect": "refuse",
+      "reason": "negative-count"
+    },
+    {
+      "name": "most-negative",
+      "why": "the top bit set",
+      "hex": "2f6c696e6b2f7065657273002c69000080000000",
+      "expect": "refuse",
+      "reason": "negative-count"
+    },
+    {
+      "name": "float-tag",
+      "why": "a float32 is refused, not converted",
+      "hex": "2f6c696e6b2f7065657273002c66000040400000",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "long-tag",
+      "why": "an int64 is refused, not converted",
+      "hex": "2f6c696e6b2f7065657273002c6800000000000000000003",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "two-integers",
+      "why": "one argument, not two",
+      "hex": "2f6c696e6b2f7065657273002c6969000000000300000004",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "no-arguments",
+      "why": "the tags say nothing follows",
+      "hex": "2f6c696e6b2f7065657273002c000000",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "address-only",
+      "why": "our address and then nothing",
+      "hex": "2f6c696e6b2f706565727300",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "truncated",
+      "why": "two bytes short",
+      "hex": "2f6c696e6b2f7065657273002c6900000000",
+      "expect": "refuse",
+      "reason": "wrong-length"
+    },
+    {
+      "name": "one-byte-over",
+      "why": "one byte long",
+      "hex": "2f6c696e6b2f7065657273002c6900000000000300",
+      "expect": "refuse",
+      "reason": "wrong-length"
+    },
+    {
+      "name": "empty",
+      "why": "nothing at all",
+      "hex": "",
+      "expect": "other"
+    },
+    {
+      "name": "an-anchor",
+      "why": "the anchor arrives on the same port",
+      "hex": "2f6c696e6b2f616e63686f72000000002c6864646400000000065fee2baee0004060100000000000405e0000000000004010000000000000",
+      "expect": "other"
+    },
+    {
+      "name": "shorter-address",
+      "why": "a different address",
+      "hex": "2f6c696e6b2f7065657200002c69000000000003",
+      "expect": "other"
+    },
+    {
+      "name": "longer-address",
+      "why": "our address is a prefix of it",
+      "hex": "2f6c696e6b2f706565727378000000002c69000000000003",
+      "expect": "other"
+    },
+    {
+      "name": "no-terminator",
+      "why": "too short to hold the address",
+      "hex": "2f6c696e6b2f7065657273",
+      "expect": "other"
+    },
+    {
+      "name": "a-bundle",
+      "why": "bundles are never sent",
+      "hex": "2362756e646c65000000000000000000",
+      "expect": "other"
+    }
+  ]
+}

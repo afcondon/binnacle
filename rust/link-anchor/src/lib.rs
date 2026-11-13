@@ -11,6 +11,13 @@
 //! What is here: the value, the validity rule, the OSC packet, and the
 //! extrapolation. What is not: sockets, clocks, or any record of when an
 //! anchor arrived. Those belong to the program that uses it.
+//!
+//! Two small messages Diaphus sends beside the anchor are here too, each with
+//! its own declaration and vectors: [`peers`] (`/link/peers`) and [`origin`]
+//! (`/clock/origin`).
+
+pub mod origin;
+pub mod peers;
 
 /// Lowest tempo accepted, in beats per minute. Link's own floor.
 pub const TEMPO_MINIMUM: f64 = 20.0;

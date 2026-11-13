@@ -144,6 +144,11 @@ and C++ receivers each have their own implementation and their own replay.
 All ports are UDP on `127.0.0.1`. How a receiver comes to be on Diaphus's
 list is outside this declaration.
 
+Diaphus sends two smaller messages beside the anchor, each with its own
+declaration and vectors here: `LINK-PEERS.md` (to Architeuthis, on the
+anchor's port) and `CLOCK-ORIGIN.md` (to es9-daemon, on the anchor's port).
+An anchor receiver gives both the verdict `other`.
+
 ## Conforming
 
 An implementation conforms when its own test suite replays

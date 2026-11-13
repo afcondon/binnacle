@@ -31,6 +31,7 @@ module Binnacle.Anchor
   , decodeOsc
   , int64Bytes
   , float64Bytes
+  , float64FromBytes
   , renderLine
   , parseLine
   , verdictOf

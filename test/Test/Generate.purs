@@ -4,7 +4,7 @@
 -- | Each case carries the DECLARED verdict from `Test.Vectors`. The `reason`
 -- | beside a refusal is the reference's own finer classification, and is
 -- | advice only: an implementation is held to the verdict, not the reason.
-module Test.Generate (main) where
+module Test.Generate (main, peers, origin) where
 
 import Prelude
 
@@ -15,6 +15,7 @@ import Effect (Effect)
 import Effect.Console (log)
 import Foreign (Foreign)
 import Simple.JSON (write)
+import Test.Companions (originVectors, peersVectors)
 import Test.Hex (hex)
 import Test.Vectors (beatCases, beatTolerance, freshCases, oscCases, textCases)
 
@@ -76,3 +77,11 @@ main = log $ pretty $ write
       }
   , fresh: freshCases
   }
+
+-- | `conformance/vectors/link-peers.json`.
+peers :: Effect Unit
+peers = log (pretty peersVectors)
+
+-- | `conformance/vectors/clock-origin.json`.
+origin :: Effect Unit
+origin = log (pretty originVectors)

@@ -13,6 +13,7 @@ import Data.Number (abs)
 import Effect (Effect)
 import Effect.Console (log)
 import Effect.Exception (throw)
+import Test.Companions as Companions
 import Test.Hex (hex)
 import Test.Vectors (BeatCase, FreshCase, OscCase, TextCase, beatCases, beatTolerance, canonical, canonicalHex, freshCases, oscCases, textCases)
 
@@ -28,6 +29,7 @@ main = do
         <> duplicateNames "osc" (map _.name oscCases)
         <> duplicateNames "text" (map _.name textCases)
         <> duplicateNames "beatAt" (map _.name beatCases)
+        <> Companions.failures
   for_ failures \failure -> log ("FAIL  " <> failure)
   log
     ( show (Array.length oscCases) <> " osc, "
@@ -36,7 +38,11 @@ main = do
         <> show (Array.length beatCases)
         <> " beatAt, "
         <> show (Array.length freshCases)
-        <> " fresh cases; "
+        <> " fresh, "
+        <> show (Array.length Companions.peersCases)
+        <> " peers, "
+        <> show (Array.length Companions.originCases)
+        <> " origin cases; "
         <> show (Array.length failures)
         <> " failures"
     )

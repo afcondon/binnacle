@@ -1,0 +1,151 @@
+{
+  "clock-origin-vectors": 1,
+  "declaration": "conformance/CLOCK-ORIGIN.md",
+  "generatedBy": "Test.Companions in binnacle; do not edit by hand, run `make vectors`",
+  "constants": {
+    "oscPacketLength": 28
+  },
+  "osc": [
+    {
+      "name": "never-started",
+      "why": "beat 0, before any device has been started",
+      "hex": "2f636c6f636b2f6f726967696e0000002c6400000000000000000000",
+      "expect": "accept",
+      "beat": 0
+    },
+    {
+      "name": "ordinary",
+      "why": "a Start that fell between beats",
+      "hex": "2f636c6f636b2f6f726967696e0000002c6400004060100000000000",
+      "expect": "accept",
+      "beat": 128.5
+    },
+    {
+      "name": "negative",
+      "why": "Link's beat may be negative",
+      "hex": "2f636c6f636b2f6f726967696e0000002c640000c010000000000000",
+      "expect": "accept",
+      "beat": -4
+    },
+    {
+      "name": "small-fraction",
+      "why": "a tiny beat is still a beat",
+      "hex": "2f636c6f636b2f6f726967696e0000002c6400003e112e0be826d695",
+      "expect": "accept",
+      "beat": 1e-9
+    },
+    {
+      "name": "very-large",
+      "why": "finite, however large",
+      "hex": "2f636c6f636b2f6f726967696e0000002c6400007e37e43c8800759c",
+      "expect": "accept",
+      "beat": 1e+300
+    },
+    {
+      "name": "not-a-number",
+      "why": "NaN would outlive the message",
+      "hex": "2f636c6f636b2f6f726967696e0000002c6400007ff8000000000000",
+      "expect": "refuse",
+      "reason": "non-finite-value"
+    },
+    {
+      "name": "infinite",
+      "why": "not finite",
+      "hex": "2f636c6f636b2f6f726967696e0000002c6400007ff0000000000000",
+      "expect": "refuse",
+      "reason": "non-finite-value"
+    },
+    {
+      "name": "negative-infinite",
+      "why": "not finite",
+      "hex": "2f636c6f636b2f6f726967696e0000002c640000fff0000000000000",
+      "expect": "refuse",
+      "reason": "non-finite-value"
+    },
+    {
+      "name": "float-tag",
+      "why": "a float32 is refused, not converted",
+      "hex": "2f636c6f636b2f6f726967696e0000002c66000043008000",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "integer-tag",
+      "why": "an integer is refused, not converted",
+      "hex": "2f636c6f636b2f6f726967696e0000002c69000000000080",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "two-doubles",
+      "why": "one argument, not two",
+      "hex": "2f636c6f636b2f6f726967696e0000002c64640040601000000000004010000000000000",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "no-arguments",
+      "why": "the tags say nothing follows",
+      "hex": "2f636c6f636b2f6f726967696e0000002c000000",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "address-only",
+      "why": "our address and then nothing",
+      "hex": "2f636c6f636b2f6f726967696e000000",
+      "expect": "refuse",
+      "reason": "wrong-type-tags"
+    },
+    {
+      "name": "truncated",
+      "why": "four bytes short",
+      "hex": "2f636c6f636b2f6f726967696e0000002c64000040601000",
+      "expect": "refuse",
+      "reason": "wrong-length"
+    },
+    {
+      "name": "four-bytes-over",
+      "why": "four bytes long",
+      "hex": "2f636c6f636b2f6f726967696e0000002c640000406010000000000000000000",
+      "expect": "refuse",
+      "reason": "wrong-length"
+    },
+    {
+      "name": "empty",
+      "why": "nothing at all",
+      "hex": "",
+      "expect": "other"
+    },
+    {
+      "name": "an-anchor",
+      "why": "the anchor arrives on the same port",
+      "hex": "2f6c696e6b2f616e63686f72000000002c6864646400000000065fee2baee0004060100000000000405e0000000000004010000000000000",
+      "expect": "other"
+    },
+    {
+      "name": "clock-restart",
+      "why": "a different address under /clock",
+      "hex": "2f636c6f636b2f726573746172740000",
+      "expect": "other"
+    },
+    {
+      "name": "longer-address",
+      "why": "our address is a prefix of it",
+      "hex": "2f636c6f636b2f6f726967696e7300002c6400004060100000000000",
+      "expect": "other"
+    },
+    {
+      "name": "no-terminator",
+      "why": "too short to hold the address",
+      "hex": "2f636c6f636b2f6f726967696e",
+      "expect": "other"
+    },
+    {
+      "name": "a-bundle",
+      "why": "bundles are never sent",
+      "hex": "2362756e646c65000000000000000000",
+      "expect": "other"
+    }
+  ]
+}
