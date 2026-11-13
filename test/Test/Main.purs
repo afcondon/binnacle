@@ -14,6 +14,7 @@ import Effect (Effect)
 import Effect.Console (log)
 import Effect.Exception (throw)
 import Test.Companions as Companions
+import Test.Daemons as Daemons
 import Test.Hex (hex)
 import Test.Vectors (BeatCase, FreshCase, OscCase, TextCase, beatCases, beatTolerance, canonical, canonicalHex, freshCases, oscCases, textCases)
 
@@ -30,6 +31,7 @@ main = do
         <> duplicateNames "text" (map _.name textCases)
         <> duplicateNames "beatAt" (map _.name beatCases)
         <> Companions.failures
+        <> Daemons.failures
   for_ failures \failure -> log ("FAIL  " <> failure)
   log
     ( show (Array.length oscCases) <> " osc, "
@@ -42,7 +44,9 @@ main = do
         <> show (Array.length Companions.peersCases)
         <> " peers, "
         <> show (Array.length Companions.originCases)
-        <> " origin cases; "
+        <> " origin cases, "
+        <> Daemons.summary
+        <> "; "
         <> show (Array.length failures)
         <> " failures"
     )

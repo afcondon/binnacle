@@ -28,8 +28,11 @@ package:
     dependencies:
       - console
       - exceptions
+      - argonaut-core
       - foreign
+      - foreign-object
       - hawser
+      - tuples
 workspace:
   packageSet:
     registry: 77.13.1

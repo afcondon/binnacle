@@ -4,7 +4,7 @@
 -- | Each case carries the DECLARED verdict from `Test.Vectors`. The `reason`
 -- | beside a refusal is the reference's own finer classification, and is
 -- | advice only: an implementation is held to the verdict, not the reason.
-module Test.Generate (main, peers, origin) where
+module Test.Generate (main, peers, origin, diaphus, es9, diaphusTable, es9Table) where
 
 import Prelude
 
@@ -15,7 +15,10 @@ import Effect (Effect)
 import Effect.Console (log)
 import Foreign (Foreign)
 import Simple.JSON (write)
+import Data.Argonaut.Core (stringify)
+import Reference.Daemons as Daemons
 import Test.Companions (originVectors, peersVectors)
+import Test.Daemons (diaphusVectors, es9Vectors)
 import Test.Hex (hex)
 import Test.Vectors (beatCases, beatTolerance, freshCases, oscCases, textCases)
 
@@ -85,3 +88,20 @@ peers = log (pretty peersVectors)
 -- | `conformance/vectors/clock-origin.json`.
 origin :: Effect Unit
 origin = log (pretty originVectors)
+
+foreign import prettyText :: String -> String
+
+-- | `conformance/vectors/diaphus-inbound.json`.
+diaphus :: Effect Unit
+diaphus = log (prettyText (stringify diaphusVectors))
+
+-- | `conformance/vectors/es9-osc.json`.
+es9 :: Effect Unit
+es9 = log (prettyText (stringify es9Vectors))
+
+-- | The generated tables of the two declarations, for `conformance/tables.mjs`.
+diaphusTable :: String
+diaphusTable = Daemons.diaphusTable
+
+es9Table :: String
+es9Table = Daemons.es9Table

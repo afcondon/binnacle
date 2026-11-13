@@ -10,6 +10,12 @@ description = "/link/anchor, the Atlantis rig's beat: the value, its validity ru
 # a consumer on an audio path takes nothing it did not ask for.
 [dependencies]
 
+[features]
+# The conformance vector files as string constants, for a consumer's own
+# tests: `link_anchor::vectors`. Off by default, so that a program on an
+# audio path carries none of it.
+vectors = []
+
 [dev-dependencies]
 # For tests/conformance.rs only: reading the vector file.
 serde_json = "1"

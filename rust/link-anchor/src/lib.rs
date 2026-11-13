@@ -19,6 +19,24 @@
 pub mod origin;
 pub mod peers;
 
+/// Binnacle's conformance vector files, as text, for a consumer's own
+/// tests. A daemon that reads or writes one of the rig's wires replays the
+/// matching file in its `cargo test`, and gets it here, pinned with the
+/// crate, with no sibling checkout to find. Behind the `vectors` feature.
+#[cfg(feature = "vectors")]
+pub mod vectors {
+    /// `conformance/DIAPHUS-INBOUND.md`: what Diaphus reads on UDP 57122.
+    pub const DIAPHUS_INBOUND: &str = include_str!("../../../conformance/vectors/diaphus-inbound.json");
+    /// `conformance/ES9-OSC.md`: what es9-daemon reads on UDP 57130.
+    pub const ES9_OSC: &str = include_str!("../../../conformance/vectors/es9-osc.json");
+    /// `conformance/LINK-ANCHOR.md`.
+    pub const LINK_ANCHOR: &str = include_str!("../../../conformance/vectors/link-anchor.json");
+    /// `conformance/LINK-PEERS.md`.
+    pub const LINK_PEERS: &str = include_str!("../../../conformance/vectors/link-peers.json");
+    /// `conformance/CLOCK-ORIGIN.md`.
+    pub const CLOCK_ORIGIN: &str = include_str!("../../../conformance/vectors/clock-origin.json");
+}
+
 /// Lowest tempo accepted, in beats per minute. Link's own floor.
 pub const TEMPO_MINIMUM: f64 = 20.0;
 /// Highest tempo accepted. Link's own ceiling.

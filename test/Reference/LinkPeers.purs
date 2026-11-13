@@ -24,6 +24,7 @@ import Prelude
 
 import Binnacle.Anchor (Verdict(..))
 import Data.Either (Either(..))
+import Data.Maybe (fromMaybe)
 import Hawser.Bytes (int32ToBytes)
 import Hawser.Osc as Osc
 import Reference.Described (peers)
@@ -39,7 +40,7 @@ header :: Array Int
 header = Osc.header peers
 
 packetLength :: Int
-packetLength = Osc.packetLength peers
+packetLength = fromMaybe 0 (Osc.packetLength peers)
 
 -- | The packet for a valid count. A producer sends nothing else.
 encode :: Int -> Either Refusal (Array Int)

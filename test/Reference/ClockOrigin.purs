@@ -23,6 +23,7 @@ import Prelude
 
 import Binnacle.Anchor (Verdict(..))
 import Data.Either (Either(..))
+import Data.Maybe (fromMaybe)
 import Hawser.Osc as Osc
 import Reference.Described (origin)
 
@@ -37,7 +38,7 @@ header :: Array Int
 header = Osc.header origin
 
 packetLength :: Int
-packetLength = Osc.packetLength origin
+packetLength = fromMaybe 0 (Osc.packetLength origin)
 
 -- | The packet for a valid origin. A producer sends nothing else.
 encode :: Number -> Either Refusal (Array Int)

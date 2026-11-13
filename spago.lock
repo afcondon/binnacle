@@ -23,10 +23,13 @@
         },
         "test": {
           "dependencies": [
+            "argonaut-core",
             "console",
             "exceptions",
             "foreign",
-            "hawser"
+            "foreign-object",
+            "hawser",
+            "tuples"
           ]
         }
       }
