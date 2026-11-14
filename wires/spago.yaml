@@ -1,0 +1,11 @@
+# The OSC that Diaphus and es9-daemon read, described once with Hawser.
+# Its own package so that writers send through the descriptions: Architeuthis
+# takes it by path and builds it for the BEAM; Binnacle's tests take it for
+# the vector files. Declarations: ../conformance/DIAPHUS-INBOUND.md, ES9-OSC.md.
+package:
+  name: rig-wires
+  dependencies:
+    - argonaut-core
+    - either
+    - hawser
+    - prelude

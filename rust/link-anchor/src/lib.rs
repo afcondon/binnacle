@@ -18,6 +18,7 @@
 
 pub mod origin;
 pub mod peers;
+pub mod strict;
 
 /// Binnacle's conformance vector files, as text, for a consumer's own
 /// tests. A daemon that reads or writes one of the rig's wires replays the

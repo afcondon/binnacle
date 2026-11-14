@@ -4,7 +4,7 @@ es9-daemon listens for OSC on UDP port 57130. Through it the rest of the rig
 sets voltages on the ES-9's sixteen buses and on the ES-5 and ESX-8CV
 behind it.
 
-`test/Reference/Daemons.purs` is the reference: each message described once.
+`wires/src/Wires/Daemons.purs` is the reference: each message described once.
 `conformance/vectors/es9-osc.json` is generated from it. If the three
 disagree, that is a bug, and it is settled here first.
 
@@ -39,28 +39,26 @@ it here.
 A level of 1.0 is full scale, which is 10 V on an ES-9 bus. The daemon
 clamps a level to ±1.
 
-## What this declares, and what it does not yet hold
+## What es9-daemon holds
 
-This file says what a **writer** must produce. es9-daemon reads much more
-loosely:
+Since 2026-11-14 es9-daemon reads exactly what this file declares
+(`read_packet` in `src/main.rs`), by the rule Diaphus follows
+(`DIAPHUS-INBOUND.md`): one bare message per datagram, the exact type
+tags, a length that ends with the last argument, every value in range. A
+refused datagram is not acted on; it is counted, the count is the
+`osc-refusals` of the `link` verb, and the first of each kind is said on
+stderr.
 
-- any number, of any OSC numeric type, is taken for any argument;
-- arguments past the ones it wants are ignored;
-- it takes a bundle apart and reads each message in it;
-- a bus, slot or gate out of range is dropped without a word, and the
-  message is not counted anywhere.
+The vectors come in four parts, as for Diaphus: `packets`, `refused`,
+`other`, and `tolerated`, which is empty. es9-daemon is held to all four.
 
-The vectors come in four parts, as for Diaphus
-(`DIAPHUS-INBOUND.md`): `packets`, `tolerated`, `refused`, `other`.
-es9-daemon is held to the first two.
+### Tolerated: nothing
 
-### Tolerated today
-
-Architeuthis's `Tidal/OSC.erl` chooses each type tag from the Erlang value
-it is handed. A level or a length that happens to be a whole number
-therefore goes out tagged as an integer. The three cases in `tolerated`
-are that, for `/cv`, `/esx` and `/tidal/gate/trig`. es9-daemon must go on
-reading them until that encoder is replaced by the declared one.
+Until 2026-11-14 Architeuthis's `Tidal/OSC.erl` chose each type tag from
+the Erlang value it was handed, so a level or a length that happened to be
+a whole number went out tagged as an integer, and es9-daemon read any
+number for any argument. Architeuthis now sends through the descriptions
+(`rig_wire.erl`), and those three packets are in `refused`.
 
 ### Read by the daemon, sent by nothing
 
@@ -70,14 +68,12 @@ them. They are candidates for removal.
 
 ## Who writes, and who reads
 
-es9-daemon, the one reader, replays `packets` and `tolerated` in
-`cargo test` (`osc_tests`).
+es9-daemon, the one reader, replays all four parts in `cargo test`
+(`osc_tests`).
 
 | Program | Language | Sends | Held by |
 |---|---|---|---|
-| Architeuthis (`es9_cv.erl`) | Erlang | `/cv`, `/cv/slew`, `/cv/trig/at` | not yet |
-| Architeuthis (`Tidal/OSC.erl`) | Erlang | `/cv`, `/cv/trig`, `/tidal/gate/trig`, `/esx`, `/esx5gate` | not yet |
-| Architeuthis (`Handler.erl`, the browser relay) | Erlang | `/cv`, `/cv/slew`, `/cv/trig/at` | not yet |
+| Architeuthis (`rig_wire.erl`, for `es9_cv.erl`, `Tidal/OSC.erl` and the browser relay in `Handler.erl`) | Erlang, encoding with the descriptions themselves | `/cv`, `/cv/slew`, `/cv/trig`, `/cv/trig/at`, `/tidal/gate/trig`, `/esx`, `/esx5gate` | `make test-erl` (`rig_wire_tests`) |
 | DeepStar (`internal/rig/osc.go`) | Go | `/cv`, `/cv/trig`, `/esx` | `go test ./internal/rig` (`wire_test.go`) |
 | Friends server (`server.mjs`) | JavaScript | `/cv`, `/cv/trig`, `/cv/trig/at`, `/esx`, `/esx5gate` | `node conformance/wire.mjs`, against the real server |
 | Diaphus (`--debug-beat` only) | Rust | `/cv/trig/at` | not yet |

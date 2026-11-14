@@ -7,10 +7,11 @@
 -- | * `packets` — what a writer produces. A writer is held to the bytes; a
 -- |   reader must accept them and read these values.
 -- | * `refused` — addressed to the daemon and not as declared. The
--- |   reference refuses them. The daemons are NOT yet held to these: both
--- |   read more loosely than the declaration (see the two documents).
--- | * `tolerated` — not as declared, but something on the rig sends it
--- |   today, so the daemon must go on reading it until that sender changes.
+-- |   reference refuses them, and since 2026-11-14 so do both daemons.
+-- | * `tolerated` — not as declared, but something on the rig sends it, so
+-- |   the daemon must go on reading it until that sender changes. Empty
+-- |   since 2026-11-14; the part is kept so that the next such case has a
+-- |   place.
 -- | * `other` — never one of these messages.
 module Test.Daemons
   ( failures
@@ -33,7 +34,7 @@ import Data.Tuple (Tuple(..))
 import Foreign.Object as Object
 import Hawser.Bytes (float32ToBytes, int32ToBytes)
 import Hawser.Osc as Osc
-import Reference.Daemons (ToDiaphus(..), ToEs9(..), controlAt, cv, cvTrig, cvTrigAt, encodeToDiaphus, encodeToEs9, esx, esx5Gate, noteAt, noteOnAt, play, setTempo, toDiaphusKinds, toDiaphusMechanical, toEs9Kinds, toEs9Mechanical, valuesToDiaphus, valuesToEs9)
+import Wires.Daemons (ToDiaphus(..), ToEs9(..), controlAt, cv, cvTrig, cvTrigAt, encodeToDiaphus, encodeToEs9, esx, esx5Gate, noteAt, noteOnAt, play, setTempo, toDiaphusKinds, toDiaphusMechanical, toEs9Kinds, toEs9Mechanical, valuesToDiaphus, valuesToEs9)
 import Test.Hex (hex)
 import Test.Vectors (canonical)
 
@@ -101,7 +102,7 @@ diaphusRefused =
   , refused "set-tempo-too-slow" (Osc.encodeUnchecked setTempo { bpm: 19.99 }) "tempo-out-of-range" "below Link's floor"
   , refused "set-tempo-too-fast" (Osc.encodeUnchecked setTempo { bpm: 999.01 }) "tempo-out-of-range" "above Link's ceiling"
   , refused "set-tempo-not-a-number" (Osc.encodeUnchecked setTempo { bpm: nan }) "non-finite-value" "a NaN tempo"
-  , refused "set-tempo-binary32" (Osc.oscString "/link/set-tempo" <> Osc.oscString ",f" <> float32ToBytes 120.0) "wrong-type-tags" "a binary32 is not what is declared (but see tolerated)"
+  , refused "set-tempo-binary32" (Osc.oscString "/link/set-tempo" <> Osc.oscString ",f" <> float32ToBytes 120.0) "wrong-type-tags" "a binary32 is not what is declared; Architeuthis sent this until 2026-11-14"
   , refused "play-two" (Osc.encodeUnchecked play { on: 2 }) "not-a-flag" "1 or 0"
   ]
     <> map (\testCase -> refused testCase.name testCase.bytes "" testCase.why) (Array.filter (\testCase -> testCase.expect == "refuse") toDiaphusMechanical)
@@ -109,14 +110,11 @@ diaphusRefused =
   note = { port: iac, channel: 1, note: 60, velocity: 100, durationMs: 250, unixMicros: then_ }
   refused name bytes reason why = { name, bytes, reason, why }
 
+-- | Nothing. Until 2026-11-14 Architeuthis sent the tempo as a binary32,
+-- | and Diaphus read it; Architeuthis now sends through the description, and
+-- | that packet is in `diaphusRefused`.
 diaphusTolerated :: Array (Tolerated ToDiaphus)
-diaphusTolerated =
-  [ { name: "set-tempo-binary32"
-    , bytes: Osc.oscString "/link/set-tempo" <> Osc.oscString ",f" <> float32ToBytes 120.0
-    , reads: SetTempo { bpm: 120.0 }
-    , why: "Architeuthis sends the tempo as a binary32 (MIDIBridge.erl); Itajara sends the declared binary64"
-    }
-  ]
+diaphusTolerated = []
 
 diaphusOther :: Array Other
 diaphusOther =
@@ -169,34 +167,21 @@ es9Refused =
   , refused "cv-trig-at-negative-delay" (Osc.encodeUnchecked cvTrigAt { bus: 8, value: 0.5, durationMs: 10.0, delayMs: -1.0 }) "negative-time" "a delay is not negative"
   , refused "esx-slot-eight" (Osc.encodeUnchecked esx { slot: 8, value: 0.5 }) "out-of-range" "outputs are 0 to 7"
   , refused "esx5gate-state-two" (Osc.encodeUnchecked esx5Gate { bit: 3, state: 2 }) "not-a-flag" "1 or 0"
-  , refused "cv-integer-level" (Osc.oscString "/cv" <> Osc.oscString ",ii" <> int32ToBytes 8 <> int32ToBytes 1) "wrong-type-tags" "an integer level is not what is declared (but see tolerated)"
+  , refused "cv-integer-level" (Osc.oscString "/cv" <> Osc.oscString ",ii" <> int32ToBytes 8 <> int32ToBytes 1) "wrong-type-tags" "an integer level is not what is declared; Architeuthis sent this until 2026-11-14"
+  , refused "esx-integer-level" (Osc.oscString "/esx" <> Osc.oscString ",ii" <> int32ToBytes 3 <> int32ToBytes 0) "wrong-type-tags" "an integer level, as above"
+  , refused "tidal-gate-trig-integer-length" (Osc.oscString "/tidal/gate/trig" <> Osc.oscString ",ii" <> int32ToBytes 2 <> int32ToBytes 10) "wrong-type-tags" "an integer length, as above"
   ]
     <> map (\testCase -> refused testCase.name testCase.bytes "" testCase.why) (Array.filter (\testCase -> testCase.expect == "refuse") toEs9Mechanical)
   where
   refused name bytes reason why = { name, bytes, reason, why }
 
--- | Architeuthis's `Tidal/OSC.erl` chooses each type tag from the Erlang
--- | value it is handed, so a level that happens to be a whole number goes
--- | out as an integer. es9-daemon reads any number for any argument, and
--- | must keep doing so until that encoder is replaced.
+-- | Nothing. Until 2026-11-14 Architeuthis's `Tidal/OSC.erl` chose each type
+-- | tag from the Erlang value it was handed, so a whole-number level went out
+-- | as an integer, and es9-daemon read any number for any argument.
+-- | Architeuthis now sends through the descriptions, and those packets are
+-- | in `es9Refused`.
 es9Tolerated :: Array (Tolerated ToEs9)
-es9Tolerated =
-  [ { name: "cv-integer-level"
-    , bytes: Osc.oscString "/cv" <> Osc.oscString ",ii" <> int32ToBytes 8 <> int32ToBytes 1
-    , reads: Cv { bus: 8, value: 1.0 }
-    , why: "a whole-number level, tagged by its Erlang type"
-    }
-  , { name: "esx-integer-level"
-    , bytes: Osc.oscString "/esx" <> Osc.oscString ",ii" <> int32ToBytes 3 <> int32ToBytes 0
-    , reads: Esx { slot: 3, value: 0.0 }
-    , why: "a whole-number level, tagged by its Erlang type"
-    }
-  , { name: "tidal-gate-trig-integer-length"
-    , bytes: Osc.oscString "/tidal/gate/trig" <> Osc.oscString ",ii" <> int32ToBytes 2 <> int32ToBytes 10
-    , reads: TidalGateTrig { channel: 2, durationMs: 10.0 }
-    , why: "a whole-number length, tagged by its Erlang type"
-    }
-  ]
+es9Tolerated = []
 
 es9Other :: Array Other
 es9Other =

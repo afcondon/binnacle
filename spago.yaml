@@ -32,6 +32,7 @@ package:
       - foreign
       - foreign-object
       - hawser
+      - rig-wires
       - tuples
 workspace:
   packageSet:

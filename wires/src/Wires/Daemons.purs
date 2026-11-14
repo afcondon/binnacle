@@ -3,10 +3,14 @@
 -- | `conformance/DIAPHUS-INBOUND.md` and `conformance/ES9-OSC.md`; their
 -- | vectors are generated from here by `make vectors`.
 -- |
+-- | This is its own package (`rig-wires`) so that a writer can send through
+-- | these descriptions and not through an encoder of its own. Architeuthis
+-- | does, on the BEAM. Binnacle's tests take it for the vectors.
+-- |
 -- | Each message is described once with Hawser, as its WRITERS produce it
 -- | (surveyed 2026-11-13: Erlang, Go, Rust, JavaScript and Python senders).
 -- | The two sum types are written by hand over the descriptions.
-module Reference.Daemons
+module Wires.Daemons
   ( ToDiaphus(..)
   , ToEs9(..)
   , NoteAt
@@ -27,14 +31,22 @@ module Reference.Daemons
   , toEs9Mechanical
   , noteAt
   , noteOnAt
+  , noteOffAt
   , controlAt
   , setTempo
   , play
+  , clockRestart
   , cv
+  , cvSlew
   , cvTrig
   , cvTrigAt
   , esx
+  , esxEnable
   , esx5Gate
+  , tidalGate
+  , tidalGateTrig
+  , tidalCv
+  , tidalCvSlew
   , diaphusTable
   , es9Table
   ) where

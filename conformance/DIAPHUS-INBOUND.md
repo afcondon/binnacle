@@ -3,7 +3,7 @@
 Diaphus listens for OSC on UDP `127.0.0.1:57122`. Through it the rest of the
 rig sends timed MIDI, and moves the Link session's tempo and transport.
 
-`test/Reference/Daemons.purs` is the reference: each message described once.
+`wires/src/Wires/Daemons.purs` is the reference: each message described once.
 `conformance/vectors/diaphus-inbound.json` is generated from it. If the
 three disagree, that is a bug, and it is settled here first.
 
@@ -34,43 +34,45 @@ it here.
 A moment is microseconds since the Unix epoch, on the sender's wall clock,
 as in `/link/anchor`. Diaphus places the MIDI on the kernel's clock from it.
 
-## What this declares, and what it does not yet hold
+## What Diaphus holds
 
-This file says what a **writer** must produce. Diaphus reads more loosely:
+Since 2026-11-14 Diaphus reads exactly what this file declares
+(`read_packet` in `src/main.rs`):
 
-- it takes a bundle apart and reads each message in it;
-- it does not check ranges: a channel of 17 or a note of 128 is truncated,
-  not refused;
-- `/link/set-tempo` may carry a binary32, and is clamped to 20 to 999, not
-  refused outside it;
-- `/link/play` may carry a float or a boolean.
+- one bare message per datagram: a bundle is not one of these messages and
+  is ignored;
+- the type tags must be exactly the declared ones, and the arguments must
+  end exactly where the datagram does;
+- every value must be inside its declared range: a channel of 17, a note
+  of 128 or a tempo of 19 is **refused**, not truncated or clamped.
+
+A refused datagram is not acted on. It is counted, and the first of each
+kind (address and rule) is said on Diaphus's stderr.
 
 So the vectors come in four parts:
 
 | Part | Meaning | Held on |
 |---|---|---|
 | `packets` | What a writer produces: the values, and the exact bytes | Writers, byte for byte. Diaphus must read these values |
-| `tolerated` | Not as declared, but sent on the rig today | Diaphus must go on reading it |
-| `refused` | Addressed to Diaphus and not as declared | The reference only, for now |
-| `other` | Never one of these messages | The reference; Diaphus logs and ignores |
+| `refused` | Addressed to Diaphus and not as declared | Diaphus must refuse it, for the stated reason |
+| `other` | Never one of these messages | Diaphus must ignore it |
+| `tolerated` | Not as declared, but sent on the rig | Empty. Diaphus would have to go on reading it |
 
-Tightening Diaphus to refuse what is in `refused` is a later, deliberate
-step, taken only when `tolerated` is empty.
+### Tolerated: nothing
 
-### Tolerated today
-
-- **`/link/set-tempo ,f`.** Architeuthis sends the tempo as a binary32
-  (`Tidal/MIDIBridge.erl`). Itajara sends the declared binary64. This is
-  the one address on this wire that two senders encode differently.
+Until 2026-11-14 Architeuthis sent `/link/set-tempo` as a binary32 and
+Diaphus read it. Architeuthis now sends through the description
+(`rig_wire.erl`), and that packet is in `refused`. The part stays in the
+file so that the next such case has a place; a reader checks it is empty.
 
 ## Who writes, and who reads
 
-Diaphus, the one reader, replays `packets` and `tolerated` in `cargo test`
+Diaphus, the one reader, replays all four parts in `cargo test`
 (`inbound_tests`).
 
 | Program | Language | Sends | Held by |
 |---|---|---|---|
-| Architeuthis (`Tidal/MIDIBridge.erl`) | Erlang | the four `/midi/…/at`, `/link/set-tempo` | not yet |
+| Architeuthis (`rig_wire.erl`, for `Tidal/MIDIBridge.erl`) | Erlang, encoding with the description itself | the four `/midi/…/at`, `/link/set-tempo` | `make test-erl` (`rig_wire_tests`) |
 | DeepStar (`internal/rig/midi.go`) | Go | `/midi/note/at`, `/midi/cc/at` | `go test ./internal/rig` (`wire_test.go`) |
 | Itajara (`daemon/src/link.rs`) | Rust | `/link/set-tempo`, `/link/play` | `cargo test` (`link::writer_tests`) |
 | fh2-config (`FH2/ClockOrigin.js`) | JavaScript | `/clock/restart` | `node conformance/wire.mjs` |
@@ -78,14 +80,14 @@ Diaphus, the one reader, replays `packets` and `tolerated` in `cargo test`
 
 ## Conforming
 
-A **reader** replays `packets` and `tolerated`: each `hex` must be read as
-the message at `address` with the arguments in `values`, in order.
+A **reader** replays `packets`: each `hex` must be read as the message at
+`address` with the arguments in `values`, in order. It replays `refused`
+(the verdict is refuse, and `reason` is the tag of the rule broken; a case
+with an empty `reason` was made mechanically and any refusal will do) and
+`other`, and checks that `tolerated` is empty.
 
 A **writer** replays `packets`: encoding `values` for `address` must give
 `hex` byte for byte.
-
-A strict reader also replays `refused` (the verdict is refuse; `reason` is
-the reference's tag and is advice) and `other`.
 
 The file carries `"diaphus-inbound-vectors": 1`. A replayer asserts the
 number it understands. Not finding the file is a failure, not a skip.

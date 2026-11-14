@@ -1,5 +1,5 @@
 // Writes the generated tables into DIAPHUS-INBOUND.md and ES9-OSC.md from
-// the descriptions in test/Reference/Daemons.purs (`write`), or fails if a
+// the descriptions in wires/src/Wires/Daemons.purs (`write`), or fails if a
 // document's table is not what the descriptions give (`check`).
 //
 // Run through `make vectors` and `make check-vectors`, after `spago build`.

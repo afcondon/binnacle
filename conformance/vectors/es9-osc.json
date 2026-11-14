@@ -45,7 +45,9 @@
     {"name":"cv-trig-at-negative-delay","why":"a delay is not negative","reason":"negative-time","hex":"2f63762f747269672f6174002c69666666000000000000083f00000041200000bf800000"},
     {"name":"esx-slot-eight","why":"outputs are 0 to 7","reason":"out-of-range","hex":"2f657378000000002c696600000000083f000000"},
     {"name":"esx5gate-state-two","why":"1 or 0","reason":"not-a-flag","hex":"2f65737835676174650000002c6969000000000300000002"},
-    {"name":"cv-integer-level","why":"an integer level is not what is declared (but see tolerated)","reason":"wrong-type-tags","hex":"2f6376002c6969000000000800000001"},
+    {"name":"cv-integer-level","why":"an integer level is not what is declared; Architeuthis sent this until 2026-11-14","reason":"wrong-type-tags","hex":"2f6376002c6969000000000800000001"},
+    {"name":"esx-integer-level","why":"an integer level, as above","reason":"wrong-type-tags","hex":"2f657378000000002c6969000000000300000000"},
+    {"name":"tidal-gate-trig-integer-length","why":"an integer length, as above","reason":"wrong-type-tags","hex":"2f746964616c2f676174652f74726967000000002c696900000000020000000a"},
     {"name":"cv-no-arguments","why":"the tags say nothing follows","reason":"wrong-type-tags","hex":"2f6376002c000000"},
     {"name":"cv-address-only","why":"our address and then nothing","reason":"wrong-type-tags","hex":"2f637600"},
     {"name":"cv-one-byte-short","why":"one byte short","reason":"wrong-length","hex":"2f6376002c696600000000083f0000"},
@@ -82,11 +84,7 @@
     {"name":"tidal-gate-trig-one-byte-over","why":"one byte long","reason":"wrong-length","hex":"2f746964616c2f676174652f74726967000000002c696600000000024120000000"},
     {"name":"tidal-gate-trig-tags-doubled","why":"every argument twice","reason":"wrong-type-tags","hex":"2f746964616c2f676174652f74726967000000002c6966696600000000000002412000000000000241200000"}
   ],
-  "tolerated": [
-    {"name":"cv-integer-level","why":"a whole-number level, tagged by its Erlang type","address":"/cv","values":[8,1],"hex":"2f6376002c6969000000000800000001"},
-    {"name":"esx-integer-level","why":"a whole-number level, tagged by its Erlang type","address":"/esx","values":[3,0],"hex":"2f657378000000002c6969000000000300000000"},
-    {"name":"tidal-gate-trig-integer-length","why":"a whole-number length, tagged by its Erlang type","address":"/tidal/gate/trig","values":[2,10],"hex":"2f746964616c2f676174652f74726967000000002c696900000000020000000a"}
-  ],
+  "tolerated": [],
   "other": [
     {"name":"empty","why":"nothing at all","hex":""},
     {"name":"an-anchor","why":"another message of the rig's","hex":"2f6c696e6b2f616e63686f72000000002c6864646400000000065fee2baee0004060100000000000405e0000000000004010000000000000"},

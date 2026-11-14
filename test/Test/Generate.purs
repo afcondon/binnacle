@@ -16,7 +16,7 @@ import Effect.Console (log)
 import Foreign (Foreign)
 import Simple.JSON (write)
 import Data.Argonaut.Core (stringify)
-import Reference.Daemons as Daemons
+import Wires.Daemons as Daemons
 import Test.Companions (originVectors, peersVectors)
 import Test.Daemons (diaphusVectors, es9Vectors)
 import Test.Hex (hex)

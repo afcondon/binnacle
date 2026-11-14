@@ -41,7 +41,7 @@
     {"name":"set-tempo-too-slow","why":"below Link's floor","reason":"tempo-out-of-range","hex":"2f6c696e6b2f7365742d74656d706f002c6400004033fd70a3d70a3d"},
     {"name":"set-tempo-too-fast","why":"above Link's ceiling","reason":"tempo-out-of-range","hex":"2f6c696e6b2f7365742d74656d706f002c640000408f38147ae147ae"},
     {"name":"set-tempo-not-a-number","why":"a NaN tempo","reason":"non-finite-value","hex":"2f6c696e6b2f7365742d74656d706f002c6400007ff8000000000000"},
-    {"name":"set-tempo-binary32","why":"a binary32 is not what is declared (but see tolerated)","reason":"wrong-type-tags","hex":"2f6c696e6b2f7365742d74656d706f002c66000042f00000"},
+    {"name":"set-tempo-binary32","why":"a binary32 is not what is declared; Architeuthis sent this until 2026-11-14","reason":"wrong-type-tags","hex":"2f6c696e6b2f7365742d74656d706f002c66000042f00000"},
     {"name":"play-two","why":"1 or 0","reason":"not-a-flag","hex":"2f6c696e6b2f706c617900002c69000000000002"},
     {"name":"note-at-no-arguments","why":"the tags say nothing follows","reason":"wrong-type-tags","hex":"2f6d6964692f6e6f74652f61740000002c000000"},
     {"name":"note-at-address-only","why":"our address and then nothing","reason":"wrong-type-tags","hex":"2f6d6964692f6e6f74652f6174000000"},
@@ -74,9 +74,7 @@
     {"name":"play-one-byte-over","why":"one byte long","reason":"wrong-length","hex":"2f6c696e6b2f706c617900002c6900000000000100"},
     {"name":"play-tags-doubled","why":"every argument twice","reason":"wrong-type-tags","hex":"2f6c696e6b2f706c617900002c6969000000000100000001"}
   ],
-  "tolerated": [
-    {"name":"set-tempo-binary32","why":"Architeuthis sends the tempo as a binary32 (MIDIBridge.erl); Itajara sends the declared binary64","address":"/link/set-tempo","values":[120],"hex":"2f6c696e6b2f7365742d74656d706f002c66000042f00000"}
-  ],
+  "tolerated": [],
   "other": [
     {"name":"empty","why":"nothing at all","hex":""},
     {"name":"an-anchor","why":"another message of the rig's","hex":"2f6c696e6b2f616e63686f72000000002c6864646400000000065fee2baee0004060100000000000405e0000000000004010000000000000"},
